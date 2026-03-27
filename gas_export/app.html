@@ -1,0 +1,1056 @@
+<script>
+/* =============================================
+   app.js – EduToken Course Website Logic
+   ============================================= */
+
+// =================== CONSTANTS ===================
+const DB_KEY = 'edutoken_db';
+const SESSION_KEY = 'edutoken_session';
+const ADMIN_CREDS = { nickname: 'admin', phone: '0610392793' };
+
+// =================== FIREBASE CONFIG ===================
+const USE_FIREBASE = true; // เปลี่ยนเป็น false เพื่อกลับไปใช้โหมดออฟไลน์
+const firebaseConfig = {
+  apiKey: "AIzaSyB79xjXQbTeY0_AMCBm7ggYh8n0tDOlUQI",
+  authDomain: "matching123-e838e.firebaseapp.com",
+  databaseURL: "https://matching123-e838e-default-rtdb.firebaseio.com",
+  projectId: "matching123-e838e",
+  storageBucket: "matching123-e838e.firebasestorage.app",
+  messagingSenderId: "701350491646",
+  appId: "1:701350491646:web:b34587f7eeb7bfdacebcaf",
+  measurementId: "G-X0FM71WWMW"
+};
+const isFirebaseConfigured = firebaseConfig.apiKey !== "YOUR_API_KEY";
+try {
+  if (USE_FIREBASE && typeof firebase !== 'undefined' && isFirebaseConfigured) firebase.initializeApp(firebaseConfig);
+} catch(e) { console.error("Firebase init err", e); }
+
+// =================== DATA STORE ===================
+let LOCAL_DB = { students: [] };
+try { LOCAL_DB = JSON.parse(localStorage.getItem(DB_KEY)) || { students: [] }; } catch(e) {}
+let currentDB = LOCAL_DB;
+
+function loadDB() { return JSON.parse(JSON.stringify(currentDB)); }
+
+function saveDB(db, targetId = null) {
+  currentDB = JSON.parse(JSON.stringify(db));
+  localStorage.setItem(DB_KEY, JSON.stringify(currentDB));
+  
+  if (!USE_FIREBASE || typeof firebase === 'undefined' || !isFirebaseConfigured) return;
+  
+  if (targetId && targetId !== '__admin__') {
+    const s = db.students.find(x => x.id === targetId);
+    if (s) firebase.database().ref('students/' + targetId).set(s);
+  } else {
+    const updates = {};
+    db.students.forEach(s => updates[s.id] = s);
+    firebase.database().ref('students').set(updates);
+  }
+}
+
+function loadSession() {
+  try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || null; }
+  catch { return null; }
+}
+
+function saveSession(s) { localStorage.setItem(SESSION_KEY, JSON.stringify(s)); }
+
+// ── Sync with Firebase ──
+function initFirebaseSync(callback) {
+  if (!USE_FIREBASE || typeof firebase === 'undefined' || !isFirebaseConfigured) {
+    seedDemoData();
+    if (callback) callback();
+    return;
+  }
+  const ref = firebase.database().ref('students');
+  let firstLoad = true;
+  ref.on('value', snapshot => {
+    const val = snapshot.val();
+    if (!val) {
+      if (LOCAL_DB.students && LOCAL_DB.students.length > 0) {
+        // Firebase ว่างเปล่า แต่ออฟไลน์มีข้อมูล -> ดันข้อมูลขึ้น Firebase ทันที
+        const updates = {};
+        LOCAL_DB.students.forEach(s => updates[s.id] = s);
+        ref.set(updates);
+      } else {
+        seedDemoData(); // seeds and saves to Firebase
+      }
+    } else {
+      currentDB = { students: Object.values(val) };
+      localStorage.setItem(DB_KEY, JSON.stringify(currentDB));
+      refreshAllUI();
+    }
+    if (firstLoad) { firstLoad = false; if (callback) callback(); }
+  });
+}
+
+function refreshAllUI() {
+  const me = getCurrentStudent();
+  if (me && !me.isAdmin) updateNavUser(me);
+  if (document.getElementById('section-dashboard').classList.contains('active')) renderDashboard();
+  if (document.getElementById('section-leaderboard').classList.contains('active')) renderFullLeaderboard();
+  if (document.getElementById('section-profile').classList.contains('active')) renderProfile();
+  if (document.getElementById('section-adminbackend').classList.contains('active')) renderAdminPage();
+}
+
+// ── Seed demo data
+function seedDemoData() {
+  const db = loadDB();
+  if (db.students.length > 0) return;
+  const names = [
+    { fn: 'สมชาย', ln: 'ใจดี', nick: 'เอ็ม', phone: '0812345601', room: 'ปวช.2/5', tokens: 520 },
+    { fn: 'นภา', ln: 'สุขใส', nick: 'นุ้ย', phone: '0812345602', room: 'ปวช.2/6', tokens: 450 },
+    { fn: 'อาทิตย์', ln: 'แสงทอง', nick: 'เอ', phone: '0812345603', room: 'ปวช.2/7', tokens: 310 },
+    { fn: 'ปวีณา', ln: 'มีชัย', nick: 'แป้น', phone: '0812345604', room: 'ปวช.2/5', tokens: 280 },
+    { fn: 'กิตติ', ln: 'พรชัย', nick: 'เก่ง', phone: '0812345605', room: 'ปวช.2/6', tokens: 210 },
+    { fn: 'วิภา', ln: 'ทองดี', nick: 'วิ', phone: '0812345606', room: 'ปวช.2/7', tokens: 180 },
+    { fn: 'ณัฐพล', ln: 'เจริญ', nick: 'นัท', phone: '0812345607', room: 'ปวช.2/5', tokens: 145 },
+    { fn: 'มินตรา', ln: 'สาระ', nick: 'มิน', phone: '0812345608', room: 'ปวช.2/6', tokens: 120 },
+    { fn: 'ชาญชัย', ln: 'กล้าหาญ', nick: 'ชาญ', phone: '0812345609', room: 'ปวช.2/7', tokens: 80 },
+    { fn: 'ศิริรัตน์', ln: 'สวัสดี', nick: 'แนน', phone: '0812345610', room: 'ปวช.2/5', tokens: 45 },
+    { fn: 'ธนากร', ln: 'พิมพ์ดี', nick: 'โฟม', phone: '0812345611', room: 'ปวช.2/6', tokens: 30 },
+    { fn: 'อรทัย', ln: 'มงคล', nick: 'อ้อม', phone: '0812345612', room: 'ปวช.2/7', tokens: 10 },
+    { fn: 'ภัทรพล', ln: 'ดีงาม', nick: 'ปอ', phone: '0812345613', room: 'ปวช.2/5', tokens: 5 },
+    { fn: 'ลดาวัลย์', ln: 'ดอกไม้', nick: 'ลดา', phone: '0812345614', room: 'ปวช.2/6', tokens: 0 },
+  ];
+  names.forEach((s, i) => {
+    db.students.push({
+      id: 'demo_' + i,
+      firstName: s.fn, lastName: s.ln, nickname: s.nick,
+      phone: s.phone, room: s.room, tokens: s.tokens,
+      isAdmin: false, registeredAt: Date.now()
+    });
+  });
+  saveDB(db);
+}
+
+// =================== HELPERS ===================
+function getGrade(tokens) {
+  if (tokens >= 500) return { label: '💎 Diamond', cls: 'diamond', color: '#B9F2FF' };
+  if (tokens >= 300) return { label: '🥇 Platinum', cls: 'platinum', color: '#E5E4E2' };
+  if (tokens >= 150) return { label: '🟡 Gold', cls: 'gold', color: '#FFD700' };
+  if (tokens >= 50) return { label: '⚪ Silver', cls: 'silver', color: '#C0C0C0' };
+  if (tokens >= 1) return { label: '🟤 Bronze', cls: 'bronze', color: '#CD7F32' };
+  return { label: '⚫ Unranked', cls: 'none', color: '#757575' };
+}
+function getAvatarChar(n) { return n ? n[0].toUpperCase() : '?'; }
+function getAvatarBg(i) {
+  const bgs = [
+    'linear-gradient(135deg,#6C63FF,#3EC6E0)',
+    'linear-gradient(135deg,#FF6B9D,#C44DFF)',
+    'linear-gradient(135deg,#FF8E53,#FE3752)',
+    'linear-gradient(135deg,#00C9FF,#92FE9D)',
+    'linear-gradient(135deg,#f7971e,#FFD200)',
+    'linear-gradient(135deg,#43e97b,#38f9d7)',
+    'linear-gradient(135deg,#fa709a,#fee140)',
+    'linear-gradient(135deg,#a18cd1,#fbc2eb)',
+  ];
+  return bgs[i % bgs.length];
+}
+function sortedStudents(filterRoom) {
+  const db = loadDB();
+  let list = db.students.slice();
+  if (filterRoom) list = list.filter(s => s.room === filterRoom);
+  list.sort((a, b) => b.tokens - a.tokens);
+  return list;
+}
+function getMyRank(myId, filterRoom) {
+  const sorted = sortedStudents(filterRoom || '');
+  const idx = sorted.findIndex(s => s.id === myId);
+  return idx === -1 ? null : idx + 1;
+}
+
+// =================== PARTICLES ===================
+function initParticles() {
+  const container = document.getElementById('particles-container');
+  if (!container) return;
+  const colors = ['#6C63FF', '#3EC6E0', '#FF6B9D', '#FFD740', '#00E676'];
+  for (let i = 0; i < 30; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 6 + 3;
+    p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random() * 100}%;`
+      + `background:${colors[Math.floor(Math.random() * colors.length)]};`
+      + `animation-duration:${Math.random() * 15 + 10}s;animation-delay:${Math.random() * 15}s;`;
+    container.appendChild(p);
+  }
+}
+
+// =================== UI HELPERS ===================
+function showToast(msg, icon = '✅', duration = 2800) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icon;
+  t.classList.remove('hidden');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.add('hidden'), duration);
+}
+function showLoading(state) {
+  document.getElementById('loading-overlay').classList.toggle('hidden', !state);
+}
+
+// ── Tab switcher
+function switchTab(tab) {
+  const lf = document.getElementById('form-login');
+  const rf = document.getElementById('form-register');
+  const tl = document.getElementById('tab-login');
+  const tr = document.getElementById('tab-register');
+  const ind = document.getElementById('tab-indicator');
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('register-error').textContent = '';
+  if (tab === 'login') {
+    lf.classList.add('active'); rf.classList.remove('active');
+    tl.classList.add('active'); tr.classList.remove('active');
+    ind.style.transform = 'translateX(0)';
+  } else {
+    lf.classList.remove('active'); rf.classList.add('active');
+    tl.classList.remove('active'); tr.classList.add('active');
+    ind.style.transform = 'translateX(100%)';
+  }
+}
+
+// ── Section navigation
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  const sec = document.getElementById('section-' + name);
+  if (sec) sec.classList.add('active');
+  document.querySelectorAll('.nav-link').forEach(l => {
+    if (l.getAttribute('onclick') && l.getAttribute('onclick').includes("'" + name + "'"))
+      l.classList.add('active');
+  });
+  if (name === 'leaderboard') renderFullLeaderboard();
+  if (name === 'profile') renderProfile();
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'adminbackend') renderAdminPage();
+}
+
+function toggleUserMenu() {
+  document.getElementById('user-menu').classList.toggle('hidden');
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('user-menu');
+  const av = document.getElementById('nav-avatar');
+  if (menu && !menu.contains(e.target) && e.target !== av) menu.classList.add('hidden');
+});
+function toggleMobileMenu() {
+  document.getElementById('mobile-menu').classList.toggle('hidden');
+}
+
+// =================== ADMIN MODAL ===================
+function showAdminLoginModal() {
+  document.getElementById('admin-modal-overlay').classList.remove('hidden');
+  document.getElementById('admin-username').value = '';
+  document.getElementById('admin-password').value = '';
+  document.getElementById('admin-modal-error').textContent = '';
+  setTimeout(() => document.getElementById('admin-username').focus(), 100);
+}
+function closeAdminModal(e) {
+  if (!e || e.target === document.getElementById('admin-modal-overlay')) {
+    document.getElementById('admin-modal-overlay').classList.add('hidden');
+  }
+}
+function adminLogin() {
+  const user = document.getElementById('admin-username').value.trim();
+  const pass = document.getElementById('admin-password').value.trim();
+  const errEl = document.getElementById('admin-modal-error');
+  if (!user || !pass) {
+    errEl.textContent = '⚠️ กรุณากรอกชื่อเล่นและเบอร์โทรศัพท์';
+    return;
+  }
+  if (user.toLowerCase() !== ADMIN_CREDS.nickname.toLowerCase() || pass !== ADMIN_CREDS.phone) {
+    errEl.textContent = '❌ ชื่อเล่นหรือเบอร์โทรไม่ถูกต้อง';
+    document.getElementById('admin-password').value = '';
+    return;
+  }
+  showLoading(true);
+  setTimeout(() => {
+    const adminSession = {
+      id: '__admin__',
+      firstName: 'ผู้ดูแล', lastName: 'ระบบ',
+      nickname: 'Admin', phone: '-', room: '-',
+      tokens: 0, isAdmin: true, registeredAt: Date.now()
+    };
+    saveSession(adminSession);
+    showLoading(false);
+    document.getElementById('admin-modal-overlay').classList.add('hidden');
+    showToast('ยินดีต้อนรับ Admin! 🔐', '🔐');
+    enterDashboard(adminSession);
+  }, 500);
+}
+
+// =================== AUTH (Student) ===================
+function handleRegister() {
+  const firstName = document.getElementById('reg-firstname').value.trim();
+  const lastName = document.getElementById('reg-lastname').value.trim();
+  const nickname = document.getElementById('reg-nickname').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const room = document.getElementById('reg-room').value;
+  const errEl = document.getElementById('register-error');
+  if (!firstName) { errEl.textContent = '⚠️ กรุณากรอกชื่อจริง'; return; }
+  if (!lastName) { errEl.textContent = '⚠️ กรุณากรอกนามสกุล'; return; }
+  if (!nickname) { errEl.textContent = '⚠️ กรุณากรอกชื่อเล่น'; return; }
+  if (!phone || phone.length < 9) { errEl.textContent = '⚠️ เบอร์โทรไม่ถูกต้อง'; return; }
+  if (!room) { errEl.textContent = '⚠️ กรุณาเลือกห้องเรียน'; return; }
+  const db = loadDB();
+  if (db.students.find(s => s.nickname === nickname || s.phone === phone)) {
+    errEl.textContent = '⚠️ ชื่อเล่นหรือเบอร์โทรนี้มีผู้ใช้แล้ว'; return;
+  }
+  showLoading(true);
+  setTimeout(() => {
+    const student = {
+      id: 'std_' + Date.now(), firstName, lastName, nickname, phone, room,
+      tokens: 0, isAdmin: false, registeredAt: Date.now()
+    };
+    db.students.push(student);
+    saveDB(db, student.id); // Pass student.id for Firebase sync
+    showLoading(false);
+    showToast('สมัครสมาชิกสำเร็จ! ยินดีต้อนรับ 🎉', '🎉');
+    enterDashboard(student);
+  }, 600);
+}
+
+function handleLogin() {
+  const nickname = document.getElementById('login-nickname').value.trim();
+  const phone = document.getElementById('login-phone').value.trim();
+  const errEl = document.getElementById('login-error');
+  if (!nickname) { errEl.textContent = '⚠️ กรุณาใส่ชื่อเล่น'; return; }
+  if (!phone) { errEl.textContent = '⚠️ กรุณาใส่เบอร์โทร'; return; }
+
+  // Check if admin is logging in via the normal student form
+  if (nickname.toLowerCase() === ADMIN_CREDS.nickname.toLowerCase() && phone === ADMIN_CREDS.phone) {
+    showLoading(true);
+    setTimeout(() => {
+      const adminSession = {
+        id: '__admin__',
+        firstName: 'ผู้ดูแล', lastName: 'ระบบ',
+        nickname: 'Admin', phone: '-', room: '-',
+        tokens: 0, isAdmin: true, registeredAt: Date.now()
+      };
+      saveSession(adminSession);
+      showLoading(false);
+      showToast('ยินดีต้อนรับ Admin! 🔐', '🔐');
+      enterDashboard(adminSession);
+    }, 500);
+    return;
+  }
+
+  // Normal Student Login
+  const db = loadDB();
+  const student = db.students.find(s => s.nickname === nickname && s.phone === phone);
+  if (!student) { errEl.textContent = '❌ ชื่อเล่นหรือเบอร์โทรไม่ถูกต้อง'; return; }
+  showLoading(true);
+  setTimeout(() => {
+    saveSession(student);
+    showLoading(false);
+    showToast(`ยินดีต้อนรับกลับ ${student.nickname}! 👋`, '👋');
+    enterDashboard(student);
+  }, 500);
+}
+
+function signInWithGoogle() {
+  if (typeof firebase === 'undefined' || !firebase.auth) {
+    showToast('ไม่พบระบบ Firebase Authentication (กรุณารีเฟรช)', '⚠️', 4000);
+    return;
+  }
+  
+  if (window.location.protocol === 'file:') {
+    showToast('Google Sign-In จะถูกบล็อกเมื่อเปิดผ่านฟล์ (file://) ในเครื่อง ต้องนำเว็บไปฝากบนเซิร์ฟเวอร์โดเมนจริงแบบออนไลน์ก่อนครับ (เช่น Firebase Hosting) 🚨', '🚫', 8000);
+    // return; (หากอยากให้มันฝืนเด้ง popup ก็เอา return ออกเพื่อให้ผู้ใช้เห็น error ไปเลย)
+  }
+
+  showLoading(true);
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(provider)
+    .then((result) => {
+      const user = result.user;
+      const db = loadDB();
+      // เช็คว่ามีอีเมลนี้หรือ uid นี้ในระบบหรือยัง
+      let student = db.students.find(s => s.email === user.email || s.id === user.uid);
+      
+      if (!student) {
+        // สร้างบัญชีใหม่ให้ถอดชื่อ-สกุลจาก Google
+        const names = (user.displayName || 'Google User').split(' ');
+        student = {
+          id: user.uid,
+          firstName: names[0],
+          lastName: names.slice(1).join(' ') || '',
+          nickname: names[0], // นิชเนมใช้เป็นชื่อบนไปก่อน
+          phone: '-', // Google อาจจะไม่มีเบอร์
+          room: 'สมัครผ่าน Google', // ยังไม่ได้เลือกห้อง
+          email: user.email,
+          tokens: 0,
+          isAdmin: false,
+          registeredAt: Date.now()
+        };
+        db.students.push(student);
+        saveDB(db, student.id);
+      }
+      
+      saveSession(student);
+      showLoading(false);
+      showToast(`เข้าสู่ระบบ Google สำเร็จ! ยินดีต้อนรับคุณ ${student.firstName}`, '🟢', 4000);
+      enterDashboard(student);
+    })
+    .catch((error) => {
+      showLoading(false);
+      console.error(error);
+      // โชว์แจ้งเตือนให้ผู้ใช้ทราบว่าถูกบล็อคจาก Google
+      if (error.code && (error.code.includes('auth/unauthorized-domain') || error.code.includes('fail'))) {
+        showToast('Google บล็อกการลงชื่อเข้าใช้! ต้องอัปโหลดเว็บขึ้นเซิร์ฟเวอร์ออนไลน์จริงก่อนจึงจะใช้ได้ครับ (Domain Unathorized) ❌', '❌', 6000);
+      } else {
+        showToast('Login Failed: ' + error.message, '⚠️', 5000);
+      }
+    });
+}
+
+function handleLogout() {
+  localStorage.removeItem(SESSION_KEY);
+  document.getElementById('dashboard-wrapper').classList.add('hidden');
+  document.getElementById('auth-wrapper').classList.remove('hidden');
+  // Hide admin nav
+  document.getElementById('nav-admin-link').classList.add('hidden');
+  document.getElementById('mobile-admin-link').classList.add('hidden');
+  switchTab('login');
+  document.getElementById('login-nickname').value = '';
+  document.getElementById('login-phone').value = '';
+  showToast('ออกจากระบบเรียบร้อย', '👋');
+}
+
+// =================== DASHBOARD ===================
+function enterDashboard(student) {
+  document.getElementById('auth-wrapper').classList.add('hidden');
+  document.getElementById('dashboard-wrapper').classList.remove('hidden');
+  updateNavUser(student);
+  // Show admin nav link if admin
+  if (student.isAdmin) {
+    document.getElementById('nav-admin-link').classList.remove('hidden');
+    document.getElementById('mobile-admin-link').classList.remove('hidden');
+  }
+  renderDashboard();
+  showSection(student.isAdmin ? 'adminbackend' : 'dashboard');
+}
+
+function updateNavUser(student) {
+  if (!student) return;
+  const db = loadDB();
+  const fresh = student.isAdmin ? student : (db.students.find(s => s.id === student.id) || student);
+  // Avatar in navbar
+  const navAvatar = document.getElementById('nav-avatar');
+  const navAvatarText = document.getElementById('nav-avatar-text');
+  const avatarUrl = getStudentAvatarUrl(student.id);
+  if (avatarUrl && !student.isAdmin) {
+    navAvatarText.textContent = '';
+    navAvatar.style.backgroundImage = `url('${avatarUrl}')`;
+    navAvatar.style.backgroundSize = 'cover';
+    navAvatar.style.backgroundPosition = 'center';
+  } else {
+    navAvatarText.textContent = getAvatarChar(student.nickname);
+    navAvatar.style.backgroundImage = '';
+    navAvatar.style.backgroundSize = '';
+    navAvatar.style.backgroundPosition = '';
+  }
+  document.getElementById('nav-token-count').textContent = fresh.tokens.toLocaleString();
+  document.getElementById('menu-name').textContent = `${student.nickname}`;
+  document.getElementById('menu-room').textContent = student.isAdmin ? '⚙️ ผู้ดูแลระบบ' : student.room;
+}
+
+function getCurrentStudent() {
+  const session = loadSession();
+  if (!session) return null;
+  if (session.id === '__admin__') return session;
+  const db = loadDB();
+  return db.students.find(s => s.id === session.id) || null;
+}
+
+function renderDashboard() {
+  const me = getCurrentStudent();
+  if (!me) return;
+  // If admin is on dashboard, show minimal info
+  const isAdmin = me.isAdmin;
+
+  const hour = new Date().getHours();
+  let greet = '🌙 ราตรีสวัสดิ์';
+  if (hour >= 6 && hour < 12) greet = '🌅 อรุณสวัสดิ์';
+  else if (hour >= 12 && hour < 18) greet = '☀️ สวัสดีตอนบ่าย';
+  else if (hour >= 18 && hour < 21) greet = '🌆 สวัสดีตอนเย็น';
+
+  document.getElementById('welcome-greeting').textContent = greet;
+  document.getElementById('welcome-name').textContent = isAdmin ? 'Admin ⚙️' : me.nickname + ' ' + me.firstName;
+  document.getElementById('welcome-room-text').textContent = isAdmin ? '🔐 ผู้ดูแลระบบ' : '📚 ' + me.room;
+  animateCounter('my-token-value', isAdmin ? 0 : me.tokens);
+
+  const all = sortedStudents('');
+  const myRank = isAdmin ? '-' : (getMyRank(me.id, '') || '-');
+  document.getElementById('my-rank-display').textContent = isAdmin ? '👑' : `#${myRank}`;
+  document.getElementById('max-token-display').textContent = all[0] ? all[0].tokens.toLocaleString() : '0';
+  document.getElementById('total-students-display').textContent = all.length;
+  document.getElementById('my-grade-display').textContent = isAdmin ? '⚙️ Admin' : getGrade(me.tokens).label;
+  document.getElementById('nav-token-count').textContent = isAdmin ? '∞' : me.tokens.toLocaleString();
+
+  renderPodium();
+  renderLeaderboard();
+}
+
+function animateCounter(id, target) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const step = Math.max(1, Math.floor(target / 40));
+  let curr = 0;
+  const timer = setInterval(() => {
+    curr = Math.min(curr + step, target);
+    el.textContent = curr.toLocaleString();
+    if (curr >= target) clearInterval(timer);
+  }, 25);
+}
+
+function renderPodium() {
+  const container = document.getElementById('podium-container');
+  if (!container) return;
+  const top3 = sortedStudents('').slice(0, 3);
+  while (top3.length < 3) top3.push(null);
+  const positions = [
+    { rank: 1, crown: '👑', order: 2 },
+    { rank: 2, crown: '🥈', order: 1 },
+    { rank: 3, crown: '🥉', order: 3 },
+  ];
+  container.innerHTML = '';
+  positions.forEach(pos => {
+    const s = top3[pos.rank - 1];
+    const card = document.createElement('div');
+    card.className = `podium-card rank-${pos.rank}`;
+    card.style.order = pos.order;
+    if (!s) {
+      card.innerHTML = `<div class="podium-crown">${pos.crown}</div><div class="podium-name" style="color:var(--text-muted)">ว่าง</div>`;
+    } else {
+      const grade = getGrade(s.tokens);
+      const avUrl = getStudentAvatarUrl(s.id);
+      const avHtml = avUrl
+        ? `<div class="podium-avatar" style="background:${getAvatarBg(pos.rank)};padding:0;overflow:hidden"><img src="${avUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"/></div>`
+        : `<div class="podium-avatar" style="background:${getAvatarBg(pos.rank)}">${getAvatarChar(s.nickname)}</div>`;
+      card.innerHTML = `
+        <div class="podium-crown">${pos.crown}</div>
+        ${avHtml}
+        <div class="podium-name">${s.nickname}</div>
+        <div class="podium-room">${s.room}</div>
+        <div class="podium-tokens" style="color:${grade.color}">🪙 ${s.tokens.toLocaleString()}</div>
+        <div class="podium-token-label">Token</div>
+        <span class="podium-rank-badge">${grade.label}</span>`;
+    }
+    container.appendChild(card);
+  });
+}
+
+function renderLeaderboard() {
+  const me = getCurrentStudent();
+  const container = document.getElementById('main-leaderboard');
+  if (!container) return;
+  const filterRoom = document.getElementById('room-filter')?.value || '';
+  const all = sortedStudents(filterRoom);
+  if (all.length === 0) {
+    container.innerHTML = '<div class="empty-state"><span>📭</span>ยังไม่มีข้อมูลในห้องนี้</div>';
+    return;
+  }
+  container.innerHTML = '';
+  all.forEach((s, idx) => {
+    const grade = getGrade(s.tokens);
+    const isMe = me && !me.isAdmin && s.id === me.id;
+    const avUrl = getStudentAvatarUrl(s.id);
+    const avHtml = avUrl
+      ? `<div class="lb-avatar" style="background:${getAvatarBg(idx)};padding:0;overflow:hidden"><img src="${avUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"/></div>`
+      : `<div class="lb-avatar" style="background:${getAvatarBg(idx)}">${getAvatarChar(s.nickname)}</div>`;
+    const row = document.createElement('div');
+    row.className = `lb-row grade-${grade.cls}${isMe ? ' is-me' : ''}`;
+    row.innerHTML = `
+      <div class="lb-rank-num">${getRankEmoji(idx + 1)}</div>
+      ${avHtml}
+      <div class="lb-info">
+        <div class="lb-name">${s.nickname} ${s.firstName}${isMe ? ' <span style="font-size:0.72rem;color:var(--primary-light)">(ฉัน)</span>' : ''}</div>
+        <div class="lb-meta">${s.room}</div>
+      </div>
+      <div class="lb-tokens" style="color:${grade.color}">🪙 ${s.tokens.toLocaleString()}</div>
+      <div class="lb-grade-badge">${grade.label}</div>`;
+    container.appendChild(row);
+  });
+}
+
+function renderFullLeaderboard() {
+  const me = getCurrentStudent();
+  const container = document.getElementById('full-leaderboard');
+  if (!container) return;
+  const filterRoom = document.getElementById('lb-room-filter')?.value || '';
+  const search = (document.getElementById('lb-search')?.value || '').toLowerCase();
+  let all = sortedStudents(filterRoom);
+  if (search) all = all.filter(s =>
+    s.nickname.toLowerCase().includes(search) ||
+    s.firstName.toLowerCase().includes(search) ||
+    s.lastName.toLowerCase().includes(search)
+  );
+  if (all.length === 0) {
+    container.innerHTML = '<div class="empty-state"><span>🔍</span>ไม่พบนักเรียนที่ค้นหา</div>';
+    return;
+  }
+  container.innerHTML = '';
+  all.forEach((s, idx) => {
+    const grade = getGrade(s.tokens);
+    const isMe = me && !me.isAdmin && s.id === me.id;
+    const avUrl = getStudentAvatarUrl(s.id);
+    const avHtml = avUrl
+      ? `<div class="lb-avatar" style="background:${getAvatarBg(idx)};padding:0;overflow:hidden"><img src="${avUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"/></div>`
+      : `<div class="lb-avatar" style="background:${getAvatarBg(idx)}">${getAvatarChar(s.nickname)}</div>`;
+    const row = document.createElement('div');
+    row.className = `lb-row grade-${grade.cls}${isMe ? ' is-me' : ''}`;
+    row.innerHTML = `
+      <div class="lb-rank-num">${getRankEmoji(idx + 1)}</div>
+      ${avHtml}
+      <div class="lb-info">
+        <div class="lb-name">${s.nickname} ${s.firstName} ${s.lastName}${isMe ? ' <span style="font-size:0.72rem;color:var(--primary-light)">(ฉัน)</span>' : ''}</div>
+        <div class="lb-meta">${s.room} · สมัคร ${new Date(s.registeredAt).toLocaleDateString('th-TH')}</div>
+      </div>
+      <div class="lb-tokens" style="color:${grade.color}">🪙 ${s.tokens.toLocaleString()}</div>
+      <div class="lb-grade-badge">${grade.label}</div>`;
+    container.appendChild(row);
+  });
+}
+
+function getRankEmoji(rank) {
+  if (rank === 1) return '🥇';
+  if (rank === 2) return '🥈';
+  if (rank === 3) return '🥉';
+  return `#${rank}`;
+}
+
+// =================== AVATAR SYSTEM ===================
+const AVATAR_KEY = 'edutoken_avatars';
+
+function getAvatarStore() {
+  try { return JSON.parse(localStorage.getItem(AVATAR_KEY)) || {}; } catch(e) { return {}; }
+}
+function saveAvatarStore(store) {
+  try { localStorage.setItem(AVATAR_KEY, JSON.stringify(store)); } catch(e) {}
+}
+function getStudentAvatarUrl(studentId) {
+  if (!studentId) return null;
+  return getAvatarStore()[studentId] || null;
+}
+
+// ── Save avatar to Firebase + localStorage
+function saveAvatarToFirebase(studentId, dataUrl) {
+  // 1. บันทึกลง localStorage ก่อน (เร็ว, ไม่ต้องรอ Firebase)
+  const store = getAvatarStore();
+  store[studentId] = dataUrl;
+  saveAvatarStore(store);
+
+  // 2. บันทึกลง Firebase (sync ข้ามเครื่อง)
+  if (USE_FIREBASE && typeof firebase !== 'undefined' && isFirebaseConfigured) {
+    firebase.database().ref('avatars/' + studentId).set(dataUrl)
+      .then(() => console.log('Avatar saved to Firebase ✅'))
+      .catch(err => console.warn('Avatar Firebase save failed:', err));
+  }
+}
+
+// ── Delete avatar from Firebase + localStorage
+function deleteAvatarFromFirebase(studentId) {
+  const store = getAvatarStore();
+  delete store[studentId];
+  saveAvatarStore(store);
+
+  if (USE_FIREBASE && typeof firebase !== 'undefined' && isFirebaseConfigured) {
+    firebase.database().ref('avatars/' + studentId).remove()
+      .catch(err => console.warn('Avatar Firebase delete failed:', err));
+  }
+}
+
+// ── Sync all avatars from Firebase to localStorage
+function syncAvatarsFromFirebase(callback) {
+  if (!USE_FIREBASE || typeof firebase === 'undefined' || !isFirebaseConfigured) {
+    if (callback) callback();
+    return;
+  }
+  firebase.database().ref('avatars').once('value', snapshot => {
+    const val = snapshot.val();
+    if (val && typeof val === 'object') {
+      // รวม Firebase avatars เข้ากับ localStorage (Firebase เป็นหลัก)
+      const store = getAvatarStore();
+      Object.assign(store, val);
+      saveAvatarStore(store);
+    }
+    if (callback) callback();
+  }).catch(() => { if (callback) callback(); });
+}
+
+function handleAvatarUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('กรุณาเลือกไฟล์รูปภาพเท่านั้น', '⚠️'); return; }
+  if (file.size > 6 * 1024 * 1024) { showToast('ไฟล์ขนาดใหญ่เกินไป (สูงสุด 6MB)', '⚠️'); return; }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      // ลด MAX ลงเหลือ 240px เพื่อให้ Base64 เล็กลง เหมาะกับ Firebase RTDB
+      const MAX = 240;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else       { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.75); // quality 0.75 ลดขนาดอีก
+      const me = getCurrentStudent();
+      if (!me) return;
+      showLoading(true);
+      saveAvatarToFirebase(me.id, dataUrl);
+      const wrap = document.getElementById('avatar-upload-wrap');
+      if (wrap) { wrap.classList.add('shimmer'); setTimeout(() => wrap.classList.remove('shimmer'), 800); }
+      showLoading(false);
+      showToast('เปลี่ยนรูปโปรไฟล์สำเร็จ! 🎉 (ซิงค์ข้ามเครื่องแล้ว)', '📷');
+      renderProfile(); updateNavUser(me); renderPodium(); renderLeaderboard();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+function removeAvatar() {
+  const me = getCurrentStudent();
+  if (!me) return;
+  if (!confirm('ลบรูปโปรไฟล์แล้วใช้ตัวอักษรแทน?')) return;
+  deleteAvatarFromFirebase(me.id);
+  showToast('ลบรูปโปรไฟล์แล้ว', '🗑️');
+  renderProfile(); updateNavUser(me); renderPodium(); renderLeaderboard();
+}
+
+// =================== PROFILE ===================
+function renderProfile() {
+  const me = getCurrentStudent();
+  if (!me) return;
+  const avatarEl = document.getElementById('profile-avatar-big');
+  const avatarWrap = document.getElementById('avatar-upload-wrap');
+  const avatarUrl = getStudentAvatarUrl(me.id);
+  if (avatarUrl && !me.isAdmin) {
+    avatarEl.innerHTML = `<img src="${avatarUrl}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;" />`;
+    if (avatarWrap) avatarWrap.classList.add('avatar-has-photo');
+  } else {
+    avatarEl.textContent = getAvatarChar(me.nickname);
+    avatarEl.style.background = '';
+    if (avatarWrap) avatarWrap.classList.remove('avatar-has-photo');
+  }
+  const overlay = document.getElementById('avatar-upload-overlay');
+  const removeBtn = document.getElementById('avatar-remove-btn');
+  if (overlay) overlay.style.display = me.isAdmin ? 'none' : '';
+  if (removeBtn) removeBtn.style.display = me.isAdmin ? 'none' : '';
+  document.getElementById('profile-nickname').textContent = me.nickname;
+  document.getElementById('profile-fullname').textContent = me.isAdmin ? 'Admin System' : `${me.firstName} ${me.lastName}`;
+  document.getElementById('profile-room-badge').textContent = me.isAdmin ? '🔐 Admin' : '🏫 ' + me.room;
+  const grade = getGrade(me.isAdmin ? 9999 : me.tokens);
+  const gradeBadge = document.getElementById('profile-grade-badge');
+  gradeBadge.textContent = me.isAdmin ? '⚙️ Administrator' : grade.label;
+  gradeBadge.style.cssText = `background:${grade.color}22;color:${grade.color};border:1px solid ${grade.color}55;display:inline-block;border-radius:20px;padding:4px 16px;font-size:0.82rem;font-weight:700;margin-top:8px;`;
+  animateCounter('ps-token', me.isAdmin ? 0 : me.tokens);
+  const rank = me.isAdmin ? null : getMyRank(me.id, '');
+  document.getElementById('ps-rank').textContent = me.isAdmin ? '👑 Admin' : (rank ? `#${rank}` : '#-');
+  document.getElementById('ps-phone').textContent = me.phone || '-';
+  document.getElementById('ps-room').textContent = me.room || '-';
+  const thresholds = [0, 50, 150, 300, 500, Infinity];
+  const cur = me.isAdmin ? 500 : me.tokens;
+  let next = thresholds.find(t => t > cur) || Infinity;
+  let prev = 0;
+  for (let i = thresholds.length - 1; i >= 0; i--) { if (cur >= thresholds[i]) { prev = thresholds[i]; break; } }
+  const pct = next === Infinity ? 100 : Math.min(100, ((cur - prev) / (next - prev)) * 100);
+  document.getElementById('progress-bar-inner').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = next === Infinity ? 'MAX LEVEL 🏆' : `${cur} / ${next}`;
+  document.getElementById('admin-panel').classList.toggle('hidden', !me.isAdmin);
+}
+
+// =================== ADMIN BACKEND PAGE ===================
+function renderAdminPage() {
+  const db = loadDB();
+  const all = db.students;
+  const totalTokens = all.reduce((s, x) => s + x.tokens, 0);
+  // Stats
+  document.getElementById('ab-total').textContent = all.length;
+  document.getElementById('ab-total-tokens').textContent = totalTokens.toLocaleString();
+  // Populate quick select
+  populateQuickSelect();
+  // Render table
+  renderAdminTable();
+}
+
+function populateQuickSelect() {
+  const sel = document.getElementById('aq-student');
+  if (!sel) return;
+  const db = loadDB();
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">-- เลือกนักเรียน --</option>';
+  db.students.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = `${s.nickname} (${s.firstName} ${s.lastName}) – ${s.room} – ${s.tokens} Token`;
+    sel.appendChild(opt);
+  });
+  if (prev) sel.value = prev;
+}
+
+function adminFillCurrentToken() {
+  const id = document.getElementById('aq-student').value;
+  const infoEl = document.getElementById('aq-current-info');
+  if (!id) { document.getElementById('aq-amount').value = ''; infoEl.textContent = ''; return; }
+  const db = loadDB();
+  const s = db.students.find(x => x.id === id);
+  if (s) {
+    document.getElementById('aq-amount').value = s.tokens;
+    const grade = getGrade(s.tokens);
+    infoEl.innerHTML = `ปัจจุบัน: <strong style="color:${grade.color}">${s.tokens} Token (${grade.label})</strong> · ${s.firstName} ${s.lastName} · ${s.room}`;
+  }
+}
+
+function adminQuickSet() {
+  const id = document.getElementById('aq-student').value;
+  const amount = parseInt(document.getElementById('aq-amount').value);
+  if (!id) { showToast('กรุณาเลือกนักเรียน', '⚠️'); return; }
+  if (isNaN(amount) || amount < 0) { showToast('จำนวนโทเค้นไม่ถูกต้อง', '⚠️'); return; }
+  const db = loadDB();
+  const s = db.students.find(x => x.id === id);
+  if (s) { s.tokens = amount; saveDB(db, s.id); refreshAdmin(s, `ตั้งค่า Token = ${amount}`); }
+}
+function adminQuickAdd() {
+  const id = document.getElementById('aq-student').value;
+  const amount = parseInt(document.getElementById('aq-amount').value);
+  if (!id) { showToast('กรุณาเลือกนักเรียน', '⚠️'); return; }
+  if (isNaN(amount)) { showToast('จำนวนโทเค้นไม่ถูกต้อง', '⚠️'); return; }
+  const db = loadDB();
+  const s = db.students.find(x => x.id === id);
+  if (s) { s.tokens = Math.max(0, s.tokens + amount); saveDB(db, s.id); refreshAdmin(s, `เพิ่ม +${amount} Token`); }
+}
+function adminQuickSub() {
+  const id = document.getElementById('aq-student').value;
+  const amount = parseInt(document.getElementById('aq-amount').value);
+  if (!id) { showToast('กรุณาเลือกนักเรียน', '⚠️'); return; }
+  if (isNaN(amount)) { showToast('จำนวนโทเค้นไม่ถูกต้อง', '⚠️'); return; }
+  const db = loadDB();
+  const s = db.students.find(x => x.id === id);
+  if (s) { s.tokens = Math.max(0, s.tokens - amount); saveDB(db, s.id); refreshAdmin(s, `ลด -${amount} Token`); }
+}
+function adminQuickReset() {
+  const id = document.getElementById('aq-student').value;
+  if (!id) { showToast('กรุณาเลือกนักเรียน', '⚠️'); return; }
+  if (!confirm('รีเซ็ต Token ของนักเรียนคนนี้เป็น 0 ใช่ไหม?')) return;
+  const db = loadDB();
+  const s = db.students.find(x => x.id === id);
+  if (s) { s.tokens = 0; saveDB(db, s.id); refreshAdmin(s, 'รีเซ็ต Token = 0'); }
+}
+
+// Inline table actions
+function adminInlineSet(id) {
+  const val = parseInt(document.getElementById('inline-input-' + id).value);
+  if (isNaN(val) || val < 0) { showToast('ค่าไม่ถูกต้อง', '⚠️'); return; }
+  const db = loadDB();
+  const s = db.students.find(x => x.id === id);
+  if (s) { s.tokens = val; saveDB(db, s.id); refreshAdmin(s, `✅ ตั้งค่า Token = ${val}`); }
+}
+function adminInlineAdd(id) {
+  const val = parseInt(document.getElementById('inline-input-' + id).value);
+  if (isNaN(val)) { showToast('ค่าไม่ถูกต้อง', '⚠️'); return; }
+  const db = loadDB();
+  const s = db.students.find(x => x.id === id);
+  if (s) { s.tokens = Math.max(0, s.tokens + val); saveDB(db, s.id); refreshAdmin(s, `➕ เพิ่ม +${val} → ${s.tokens}`); }
+}
+function adminInlineSub(id) {
+  const val = parseInt(document.getElementById('inline-input-' + id).value);
+  if (isNaN(val)) { showToast('ค่าไม่ถูกต้อง', '⚠️'); return; }
+  const db = loadDB();
+  const s = db.students.find(x => x.id === id);
+  if (s) { s.tokens = Math.max(0, s.tokens - val); saveDB(db, s.id); refreshAdmin(s, `➖ ลด -${val} → ${s.tokens}`); }
+}
+function adminInlineReset(id) {
+  const db = loadDB();
+  const s = db.students.find(x => x.id === id);
+  if (s && confirm(`รีเซ็ต Token ${s.nickname} เป็น 0?`)) {
+    s.tokens = 0; saveDB(db, s.id); refreshAdmin(s, `🔄 รีเซ็ต ${s.nickname} = 0`);
+  }
+}
+
+function refreshAdmin(s, msg) {
+  showToast(`${msg} · ${s ? s.nickname : ''}`, '✅');
+  renderAdminPage();
+  adminFillCurrentToken();
+  // Update dashboard stats if visible
+  renderPodium();
+  renderLeaderboard();
+  document.getElementById('nav-token-count').textContent = '∞';
+}
+
+// Bulk actions
+function adminBulkAdd() {
+  const room = document.getElementById('bulk-room').value;
+  const amount = parseInt(document.getElementById('bulk-amount').value);
+  if (isNaN(amount) || amount <= 0) { showToast('กรุณากรอกจำนวน Token ที่ถูกต้อง', '⚠️'); return; }
+  const label = room || 'ทุกห้อง';
+  if (!confirm(`เพิ่ม +${amount} Token ให้ทุกคนใน${label}?`)) return;
+  const db = loadDB();
+  let count = 0;
+  db.students.forEach(s => {
+    if (!room || s.room === room) { s.tokens += amount; count++; }
+  });
+  saveDB(db); // Bulk update, no specific ID
+  showToast(`➕ เพิ่ม ${amount} Token ให้ ${count} คน (${label})`, '✅');
+  renderAdminPage(); renderPodium(); renderLeaderboard();
+}
+function adminBulkReset() {
+  const room = document.getElementById('bulk-room').value;
+  const label = room || 'ทุกห้อง';
+  if (!confirm(`รีเซ็ต Token ทุกคนใน${label} เป็น 0?`)) return;
+  const db = loadDB();
+  let count = 0;
+  db.students.forEach(s => { if (!room || s.room === room) { s.tokens = 0; count++; } });
+  saveDB(db); // Bulk update, no specific ID
+  showToast(`🔄 รีเซ็ต Token ${count} คน (${label})`, '✅');
+  renderAdminPage(); renderPodium(); renderLeaderboard();
+}
+function adminResetAllTokens() {
+  if (!confirm('⚠️ รีเซ็ต Token ทุกคนทั้งหมดเป็น 0 ?\nการกระทำนี้ไม่สามารถย้อนกลับได้!')) return;
+  if (!confirm('ยืนยันอีกครั้ง: รีเซ็ต Token ทุกคนจริงหรือ?')) return;
+  const db = loadDB();
+  db.students.forEach(s => { s.tokens = 0; });
+  saveDB(db); // Bulk update, no specific ID
+  showToast('💣 รีเซ็ต Token ทุกคนเรียบร้อยแล้ว', '✅');
+  renderAdminPage(); renderPodium(); renderLeaderboard();
+}
+function adminExportCSV() {
+  const db = loadDB();
+  const sorted = db.students.slice().sort((a, b) => b.tokens - a.tokens);
+  const header = 'อันดับ,ชื่อเล่น,ชื่อ,นามสกุล,ห้องเรียน,Token,เกรด,เบอร์โทร\n';
+  const rows = sorted.map((s, i) =>
+    `${i + 1},${s.nickname},${s.firstName},${s.lastName},${s.room},${s.tokens},${getGrade(s.tokens).label.replace(/[^ ]+/, '').trim()},${s.phone}`
+  ).join('\n');
+  const blob = new Blob(['\uFEFF' + header + rows], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = `edutoken_export_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+  showToast('📥 Export CSV สำเร็จ', '✅');
+}
+
+function renderAdminTable() {
+  const container = document.getElementById('admin-student-table');
+  if (!container) return;
+  const filterRoom = document.getElementById('ab-room-filter')?.value || '';
+  const search = (document.getElementById('ab-search')?.value || '').toLowerCase();
+  const sortBy = document.getElementById('ab-sort')?.value || 'tokens-desc';
+
+  let all = loadDB().students.slice();
+  if (filterRoom) all = all.filter(s => s.room === filterRoom);
+  if (search) all = all.filter(s =>
+    s.nickname.toLowerCase().includes(search) ||
+    s.firstName.toLowerCase().includes(search) ||
+    s.lastName.toLowerCase().includes(search)
+  );
+  if (sortBy === 'tokens-desc') all.sort((a, b) => b.tokens - a.tokens);
+  else if (sortBy === 'tokens-asc') all.sort((a, b) => a.tokens - b.tokens);
+  else if (sortBy === 'name') all.sort((a, b) => a.nickname.localeCompare(b.nickname, 'th'));
+  else if (sortBy === 'room') all.sort((a, b) => a.room.localeCompare(b.room, 'th'));
+
+  if (all.length === 0) {
+    container.innerHTML = '<div class="empty-state" style="padding:2rem"><span>📭</span>ไม่พบนักเรียน</div>';
+    return;
+  }
+
+  // Header
+  let html = `<div class="admin-tr-header">
+    <div>#</div>
+    <div>ชื่อ – ชื่อเล่น</div>
+    <div>ห้อง</div>
+    <div>Token (เกรด)</div>
+    <div>Token</div>
+    <div>จัดการ</div>
+  </div>`;
+  // Rows
+  all.forEach((s, idx) => {
+    const grade = getGrade(s.tokens);
+    html += `<div class="admin-tr">
+      <div class="admin-tr-rank">${getRankEmoji(idx + 1)}</div>
+      <div class="admin-tr-name-cell">
+        <div class="admin-tr-mini-avatar" style="background:${getAvatarBg(idx)}">${getAvatarChar(s.nickname)}</div>
+        <div>
+          <div class="admin-tr-name">${s.nickname}</div>
+          <div class="admin-tr-nick">${s.firstName} ${s.lastName}</div>
+        </div>
+      </div>
+      <div><span class="admin-tr-room">${s.room}</span></div>
+      <div>
+        <div class="admin-tr-tokens" style="color:${grade.color}">🪙 ${s.tokens}</div>
+        <div class="admin-tr-grade" style="margin-top:3px">${grade.label}</div>
+      </div>
+      <div>
+        <input type="number" id="inline-input-${s.id}" class="admin-inline-input" value="${s.tokens}" min="0" />
+      </div>
+      <div class="admin-tr-actions">
+        <button class="aib-btn aib-set"   onclick="adminInlineSet('${s.id}')">✅</button>
+        <button class="aib-btn aib-add"   onclick="adminInlineAdd('${s.id}')">➕</button>
+        <button class="aib-btn aib-sub"   onclick="adminInlineSub('${s.id}')">➖</button>
+        <button class="aib-btn aib-reset" onclick="adminInlineReset('${s.id}')">🔄</button>
+      </div>
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// =================== GAME INTEGRATION ===================
+window.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'ADD_TOKEN') {
+    const me = getCurrentStudent();
+    if (me) {
+      const db = loadDB();
+      const s = db.students.find(x => x.id === me.id);
+      if (s) {
+        s.tokens += e.data.amount;
+        saveDB(db, s.id);
+        saveSession(s);
+        const msg = e.data.reason ? `🎉 ยินดีด้วย! คุณได้รับ ${e.data.amount} Token พ้อยต์จาก ${e.data.reason}!` : `🎉 ยินดีด้วย! คุณได้รับ ${e.data.amount} Token พ้อยต์จากการเล่นมินิเกม!`;
+        const icon = e.data.icon || '🎮';
+        showToast(msg, icon, 4500);
+        
+        try { document.getElementById('nav-token-count').textContent = s.tokens.toLocaleString(); } catch(e){}
+        
+        // Refresh visible sections
+        try {
+          renderPodium();
+          renderLeaderboard();
+          if (document.getElementById('section-profile').classList.contains('active')) renderProfile();
+          if (document.getElementById('section-dashboard').classList.contains('active')) renderDashboard();
+          if (document.getElementById('section-adminbackend').classList.contains('active')) renderAdminPage();
+        } catch(e) {}
+      }
+    }
+  }
+});
+
+// =================== INIT ===================
+(function init() {
+  initParticles();
+  // ซิงค์ avatars จาก Firebase ก่อน แล้วค่อย initFirebaseSync
+  syncAvatarsFromFirebase(() => {
+    initFirebaseSync(() => {
+      const session = loadSession();
+      if (session) {
+        const db = loadDB();
+        const fresh = session.id === '__admin__' ? session : db.students.find(s => s.id === session.id);
+        if (fresh) {
+          document.getElementById('auth-wrapper').classList.add('hidden');
+          document.getElementById('dashboard-wrapper').classList.remove('hidden');
+          updateNavUser(fresh);
+          if (fresh.isAdmin) {
+            document.getElementById('nav-admin-link').classList.remove('hidden');
+            document.getElementById('mobile-admin-link').classList.remove('hidden');
+          }
+          renderDashboard();
+          showSection(fresh.isAdmin ? 'adminbackend' : 'dashboard');
+          return;
+        }
+      }
+      switchTab('login');
+    });
+  });
+})();
+
+</script>

@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Builder Simulator</title>
+
+    <!-- 1. Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. Load React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- 3. Load Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        body {
+            overscroll-behavior-y: contain;
+        }
+
+        .font-dos {
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .blink {
+            animation: blinker 1s linear infinite;
+        }
+
+        @keyframes blinker {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes explode {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 1;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.5);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+
+        .explosion {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, #fbbf24 0%, #ef4444 50%, #1f2937 100%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: explode 0.4s ease-out forwards;
+            z-index: 100;
+            box-shadow: 0 0 20px #ef4444;
+        }
+
+        /* Socket Styling */
+        .socket-port {
+            position: absolute;
+            background-color: #1f2937;
+            border: 1px solid #4b5563;
+            transform: translate(-50%, -50%);
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 2px #000;
+        }
+
+        .socket-pins {
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(#6b7280 20%, transparent 20%);
+            background-size: 3px 3px;
+        }
+
+        .bg-win11 {
+            background: radial-gradient(circle at 50% 120%, #60a5fa, #1e3a8a, #0f172a);
+            background-size: cover;
+        }
+
+        /* Firework Animation */
+        @keyframes firework {
+            0% {
+                transform: translate(var(--x), var(--initialY));
+                width: var(--initialSize);
+                opacity: 1;
+            }
+
+            50% {
+                width: 0.5rem;
+                opacity: 1;
+            }
+
+            100% {
+                width: var(--finalSize);
+                opacity: 0;
+            }
+        }
+
+        .firework,
+        .firework::before,
+        .firework::after {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            animation: firework 2s infinite ease-in-out;
+        }
+
+        .firework::before,
+        .firework::after {
+            content: '';
+            display: block;
+        }
+
+        .fw-1 {
+            animation: firework 2s infinite;
+            box-shadow: 0 0 #fff, -20px -30px #ff0055, 20px -30px #ff0055, -30px 10px #ff0055, 30px 10px #ff0055, -10px 40px #ff0055, 10px 40px #ff0055;
+        }
+
+        .fw-2 {
+            animation: firework 2.5s infinite 0.5s;
+            box-shadow: 0 0 #fff, -20px -30px #00aaff, 20px -30px #00aaff, -30px 10px #00aaff, 30px 10px #00aaff, -10px 40px #00aaff, 10px 40px #00aaff;
+        }
+
+        .fw-3 {
+            animation: firework 1.8s infinite 1s;
+            box-shadow: 0 0 #fff, -20px -30px #ffdd00, 20px -30px #ffdd00, -30px 10px #ffdd00, 30px 10px #ffdd00, -10px 40px #ffdd00, 10px 40px #ffdd00;
+        }
+
+        @keyframes gradient-x {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .animate-rgb {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient-x 15s ease infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 transition-colors duration-500">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- GLOBAL SOUND STATE ---
+        let GLOBAL_VOLUME = 0.5;
+
+        // --- SOUND MANAGER ---
+        const playSound = (type) => {
+            try {
+                if (GLOBAL_VOLUME <= 0) return;
+
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const now = ctx.currentTime;
+
+                const masterGain = ctx.createGain();
+                masterGain.gain.value = GLOBAL_VOLUME;
+                masterGain.connect(ctx.destination);
+
+                if (type === 'click') {
+                    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(masterGain);
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'eat' || type === 'correct') {
+                    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(masterGain);
+                    osc.type = 'square'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(1200, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                    osc.start(now); osc.stop(now + 0.1);
+                } else if (type === 'crash' || type === 'wrong') {
+                    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(masterGain);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+                    gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now); osc.stop(now + 0.3);
+                } else if (type === 'success') {
+                    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(masterGain);
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(500, now); osc.frequency.linearRampToValueAtTime(1000, now + 0.1);
+                    gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                    osc.start(now); osc.stop(now + 0.5);
+                } else if (type === 'error') {
+                    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                    const bufferSize = ctx.sampleRate * 0.5; const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                    const data = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                    const noise = ctx.createBufferSource(); noise.buffer = buffer;
+                    const filter = ctx.createBiquadFilter(); filter.type = 'lowpass'; filter.frequency.value = 1000;
+                    noise.connect(filter); filter.connect(gain); gain.connect(masterGain);
+                    gain.gain.setValueAtTime(0.5, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    noise.start(now); noise.stop(now + 0.5);
+                } else if (type === 'boot') {
+                    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                    osc.connect(gain); gain.connect(masterGain);
+                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(50, now); osc.frequency.linearRampToValueAtTime(100, now + 2);
+                    gain.gain.setValueAtTime(0.05, now); gain.gain.linearRampToValueAtTime(0, now + 2);
+                    osc.start(now); osc.stop(now + 2);
+                } else if (type === 'win') {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, i) => {
+                        const osc = ctx.createOscillator(); const gain = ctx.createGain();
+                        osc.connect(gain); gain.connect(masterGain);
+                        const startTime = now + (i * 0.15);
+                        osc.type = 'triangle'; osc.frequency.setValueAtTime(freq, startTime);
+                        gain.gain.setValueAtTime(0, startTime); gain.gain.linearRampToValueAtTime(0.2, startTime + 0.05); gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.5);
+                        osc.start(startTime); osc.stop(startTime + 0.5);
+                    });
+                }
+            } catch (e) { console.error("Audio Error", e); }
+        };
+
+        // --- INLINE ICONS ---
+        const Icons = {
+            Monitor: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" /></svg>,
+            Cpu: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="16" height="16" x="4" y="4" rx="2" /><rect width="6" height="6" x="9" y="9" rx="1" /><path d="M15 2v2" /><path d="M15 20v2" /><path d="M2 15h2" /><path d="M2 9h2" /><path d="M20 15h2" /><path d="M20 9h2" /><path d="M9 2v2" /><path d="M9 20v2" /></svg>,
+            HardDrive: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="22" x2="2" y1="12" y2="12" /><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /><line x1="6" x2="6.01" y1="16" y2="16" /><line x1="10" x2="10.01" y1="16" y2="16" /></svg>,
+            Zap: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>,
+            Box: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><polyline points="3.27 6.96 12 12.01 20.73 6.96" /><line x1="12" x2="12" y1="22.08" y2="12" /></svg>,
+            Save: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></svg>,
+            RotateCcw: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>,
+            CheckCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
+            Smartphone: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /><line x1="12" x2="12.01" y1="18" y2="18" /></svg>,
+            Cable: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M17 21v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><path d="M7 21v-2a2 2 0 0 0-2-2H3a2 2 0 0 0-2 2v2" /><path d="M7 4a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2" /><path d="M12 6v12" /></svg>,
+            MousePointer2: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m12 19-3-6-6-3 17.5-6.5L12 19Z" /></svg>,
+            AlertCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10" /><line x1="12" x2="12" y1="8" y2="12" /><line x1="12" x2="12.01" y1="16" y2="16" /></svg>,
+            Usb: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M10 7h4v6h-4z" /><path d="M7 13h10v8H7z" /><path d="M12 2v5" /></svg>,
+            Power: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18.36 6.64a9 9 0 1 1-12.73 0" /><line x1="12" x2="12" y1="2" y2="12" /></svg>,
+            Lock: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>,
+            Trash2: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>,
+            CloudSun: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 2v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="M20 12h2" /><path d="m19.07 4.93-1.41 1.41" /><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128" /><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" /></svg>,
+            Search: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>,
+            ChevronRight: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m9 18 6-6-6-6" /></svg>,
+            ChevronUp: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="m18 15-6-6-6 6" /></svg>,
+            Wifi: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 20h.01" /><path d="M2 8.82a15 15 0 0 1 20 0" /><path d="M5 12.859a10 10 0 0 1 14 0" /><path d="M8.5 16.429a5 5 0 0 1 7 0" /></svg>,
+            Volume2: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><path d="M19.07 4.93a10 10 0 0 1 0 14.14" /><path d="M15.54 8.46a5 5 0 0 1 0 7.07" /></svg>,
+            Battery: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="16" height="10" x="2" y="7" rx="2" ry="2" /><line x1="22" x2="22" y1="11" y2="13" /></svg>,
+            Award: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="8" r="7" /><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" /></svg>,
+            Settings: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></svg>,
+            VolumeX: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" /><line x1="23" x2="17" y1="9" y2="15" /><line x1="17" x2="23" y1="9" y2="15" /></svg>,
+            Sun: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>,
+            Moon: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>,
+            Palette: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="13.5" cy="6.5" r=".5" /><circle cx="17.5" cy="10.5" r=".5" /><circle cx="8.5" cy="7.5" r=".5" /><circle cx="6.5" cy="12.5" r=".5" /><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" /></svg>,
+            Terminal: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="4 17 10 11 4 5" /><line x1="12" x2="20" y1="19" y2="19" /></svg>,
+            Plus: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14" /><path d="M12 5v14" /></svg>,
+            Minus: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M5 12h14" /></svg>,
+            Gamepad2: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><line x1="6" x2="10" y1="12" y2="12" /><line x1="8" x2="8" y1="10" y2="14" /><line x1="15" x2="15.01" y1="13" y2="13" /><line x1="18" x2="18.01" y1="11" y2="11" /><rect width="20" height="12" x="2" y="6" rx="2" /></svg>,
+            X: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>,
+            BookOpen: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /></svg>,
+        };
+
+        const {
+            Monitor, Cpu, HardDrive, Zap, Box, Save, RotateCcw, CheckCircle,
+            Smartphone, Cable, MousePointer2, AlertCircle, Usb, Power, Lock,
+            Trash2, CloudSun, Search, ChevronRight, ChevronUp, Wifi, Volume2, Battery, Award,
+            Settings, VolumeX, Sun, Moon, Palette, Terminal, Plus, Minus, Gamepad2, X, BookOpen
+        } = Icons;
+
+        // --- PARTS DATA ---
+        const PARTS_DATA = {
+            cpu: [
+                { id: 'cpu1', name: 'Intel Core i3-14100F', price: 3500, type: 'Entry', color: '#A0A0A0', socket: 'LGA1700' },
+                { id: 'cpu5', name: 'AMD Ryzen 5 5600', price: 4200, type: 'Entry', color: '#FF4500', socket: 'AM4' },
+                { id: 'cpu2', name: 'Intel Core i5-14400F', price: 7500, type: 'Mid', color: '#4682B4', socket: 'LGA1700' },
+                { id: 'cpu6', name: 'AMD Ryzen 5 7600X', price: 8900, type: 'Mid', color: '#FF4500', socket: 'AM5' },
+                { id: 'cpu7', name: 'Intel Core i7-14700K', price: 15900, type: 'High', color: '#1E90FF', socket: 'LGA1700' },
+                { id: 'cpu3', name: 'AMD Ryzen 7 7800X3D', price: 14500, type: 'High', color: '#FF4500', socket: 'AM5' },
+                { id: 'cpu4', name: 'Intel Core i9-14900K', price: 22000, type: 'Ultra', color: '#1E90FF', socket: 'LGA1700' },
+            ],
+            motherboard: [
+                { id: 'mb1', name: 'H610M (Entry Intel)', price: 2500, size: 'mATX', color: '#2E8B57', socket: 'LGA1700', ramType: 'DDR4' },
+                { id: 'mb4', name: 'A520M (Entry AMD)', price: 2200, size: 'mATX', color: '#333333', socket: 'AM4', ramType: 'DDR4' },
+                { id: 'mb2', name: 'B760 Gaming WiFi', price: 5500, size: 'ATX', color: '#333333', socket: 'LGA1700', ramType: 'DDR5' },
+                { id: 'mb5', name: 'B650M Aorus Elite', price: 6500, size: 'mATX', color: '#FF6600', socket: 'AM5', ramType: 'DDR5' },
+                { id: 'mb3', name: 'Z790 Aorus Master', price: 12000, size: 'E-ATX', color: '#111111', socket: 'LGA1700', ramType: 'DDR5' },
+                { id: 'mb6', name: 'X670E Taichi', price: 18000, size: 'E-ATX', color: '#222222', socket: 'AM5', ramType: 'DDR5' },
+            ],
+            ram: [
+                { id: 'ram1', name: '8GB DDR4 3200MHz', price: 900, count: 1, style: 'basic', type: 'DDR4' },
+                { id: 'ram4', name: '16GB (8x2) DDR4 3200MHz', price: 1500, count: 2, style: 'basic', type: 'DDR4' },
+                { id: 'ram2', name: '16GB (8x2) DDR4 RGB', price: 2200, count: 2, style: 'rgb', type: 'DDR4' },
+                { id: 'ram5', name: '32GB (16x2) DDR4 RGB', price: 3500, count: 2, style: 'rgb', type: 'DDR4' },
+                { id: 'ram3', name: '32GB (16x2) DDR5 RGB', price: 5500, count: 2, style: 'premium', type: 'DDR5' },
+                { id: 'ram6', name: '64GB (32x2) DDR5 RGB', price: 9900, count: 2, style: 'premium', type: 'DDR5' },
+            ],
+            gpu: [
+                { id: 'gpu0', name: 'Onboard Graphics', price: 0, length: 0 },
+                { id: 'gpu1', name: 'GTX 1650 4GB', price: 4500, length: 1, color: '#333333' },
+                { id: 'gpu4', name: 'RX 6600 8GB', price: 7200, length: 2, color: '#AA0000' },
+                { id: 'gpu2', name: 'RTX 3060 8GB', price: 11000, length: 2, color: '#555555' },
+                { id: 'gpu5', name: 'RTX 3070 Ti 12GB', price: 29000, length: 2, color: '#666666' },
+                { id: 'gpu6', name: 'RX 7900 XTX 24GB', price: 37000, length: 3, color: '#CC0000' },
+                { id: 'gpu3', name: 'RTX 5090 24GB', price: 65000, length: 3, color: '#000000' },
+            ],
+            storage: [
+                { id: 'ssd1', name: '256GB SATA SSD', price: 800, type: 'sata' },
+                { id: 'ssd4', name: '512GB SATA SSD', price: 1200, type: 'sata' },
+                { id: 'ssd5', name: '2TB HDD SATA', price: 1800, type: 'sata' },
+                { id: 'ssd6', name: '4TB HDD SATA', price: 3200, type: 'sata' },
+                { id: 'ssd2', name: '500GB M.2 NVMe', price: 1500, type: 'm2' },
+                { id: 'ssd3', name: '1TB M.2 NVMe Gen4', price: 2900, type: 'm2' },
+                { id: 'ssd7', name: '2TB M.2 NVMe Gen4', price: 5500, type: 'm2' },
+            ],
+            psu: [
+                { id: 'psu1', name: '550W 80+ White', price: 1200, color: '#A0aec0' },
+                { id: 'psu4', name: '650W 80+ Bronze', price: 1900, color: '#CD7F32' },
+                { id: 'psu2', name: '750W 80+ Gold', price: 3500, color: '#ECC94B' },
+                { id: 'psu5', name: '850W 80+ Gold', price: 4500, color: '#D4AF37' },
+                { id: 'psu3', name: '1000W 80+ Platinum', price: 6900, color: '#1A202C' },
+                { id: 'psu6', name: '1200W 80+ Titanium', price: 9900, color: '#E5E4E2' },
+            ],
+            case: [
+                { id: 'case1', name: 'Office Case (Black)', price: 900, color: '#1a202c', borderColor: '#4a5568' },
+                { id: 'case2', name: 'Gaming Case (White)', price: 2500, color: '#f7fafc', borderColor: '#cbd5e0' },
+                { id: 'case4', name: 'Pink Lover (Pink)', price: 2900, color: '#fbcfe8', borderColor: '#db2777' },
+                { id: 'case3', name: 'RGB Master (Black)', price: 4500, color: '#000000', borderColor: '#805ad5' },
+                { id: 'case5', name: 'Aquarium View (White)', price: 5900, color: '#ffffff', borderColor: '#38bdf8' },
+            ]
+        };
+
+        const CATEGORY_MAP = {
+            cpu: 'cpu', motherboard: 'motherboard', ram: 'ram', gpu: 'gpu',
+            hdd1: 'storage', hdd2: 'storage', m2: 'storage', psu: 'psu', case: 'case'
+        };
+
+        // --- COMPONENTS FOR BUILDING/CABLING ---
+        const CableConnector = ({ id, label, isConnected, startPos, endPos, onDragStart }) => {
+            const getPath = () => {
+                const c1x = startPos.x;
+                const c1y = startPos.y - 50;
+                const c2x = endPos.x;
+                const c2y = endPos.y + 50;
+                return `M ${startPos.x} ${startPos.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${endPos.x} ${endPos.y}`;
+            };
+            return (
+                <g>
+                    <path d={getPath()} fill="none" stroke={isConnected ? "#22c55e" : "#eab308"} strokeWidth="6" strokeLinecap="round" className="transition-colors duration-300 pointer-events-none" style={{ filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,0.5))' }} />
+                    <g transform={`translate(${endPos.x - 15}, ${endPos.y - 10})`} onMouseDown={(e) => onDragStart(e, id)} onTouchStart={(e) => onDragStart(e, id)} className={`${isConnected ? 'cursor-default' : 'cursor-grab active:cursor-grabbing'} hover:brightness-110`} pointerEvents="all">
+                        <rect width="30" height="20" rx="4" fill="#1f2937" stroke={isConnected ? "#22c55e" : "#facc15"} strokeWidth="2" />
+                        <text x="15" y="14" textAnchor="middle" fontSize="10" fill="white" className="pointer-events-none select-none font-bold">{label.split(' ')[0]}</text>
+                    </g>
+                </g>
+            );
+        };
+
+        const TargetZone = ({ x, y, size = 40, active, label }) => {
+            if (!active) return null;
+            return (
+                <div className="absolute border-2 border-dashed border-yellow-400 bg-yellow-400/20 rounded-full animate-pulse flex items-center justify-center pointer-events-none z-40" style={{ left: `${x}%`, top: `${y}%`, width: size, height: size, transform: 'translate(-50%, -50%)' }}>
+                    <div className="absolute -top-6 text-[10px] bg-yellow-100 text-yellow-800 px-1 rounded whitespace-nowrap font-bold shadow-sm">เสียบที่นี่: {label}</div>
+                </div>
+            );
+        };
+
+        // --- SNAKE GAME COMPONENT ---
+        const SnakeGame = ({ onClose }) => {
+            const GRID_SIZE = 20;
+            const CELL_SIZE = 15;
+            const [snake, setSnake] = useState([{ x: 5, y: 5 }]);
+            const [food, setFood] = useState({ x: 10, y: 10 });
+            const [dir, setDir] = useState({ x: 1, y: 0 });
+            const [score, setScore] = useState(0);
+            const [gameOver, setGameOver] = useState(false);
+
+            const spawnFood = () => {
+                return {
+                    x: Math.floor(Math.random() * GRID_SIZE),
+                    y: Math.floor(Math.random() * GRID_SIZE)
+                };
+            };
+
+            useEffect(() => {
+                const handleKey = (e) => {
+                    switch (e.key) {
+                        case 'ArrowUp': if (dir.y === 0) setDir({ x: 0, y: -1 }); break;
+                        case 'ArrowDown': if (dir.y === 0) setDir({ x: 0, y: 1 }); break;
+                        case 'ArrowLeft': if (dir.x === 0) setDir({ x: -1, y: 0 }); break;
+                        case 'ArrowRight': if (dir.x === 0) setDir({ x: 1, y: 0 }); break;
+                    }
+                };
+                window.addEventListener('keydown', handleKey);
+                return () => window.removeEventListener('keydown', handleKey);
+            }, [dir]);
+
+            useEffect(() => {
+                if (gameOver) return;
+                const moveSnake = setInterval(() => {
+                    setSnake((prev) => {
+                        const newHead = { x: prev[0].x + dir.x, y: prev[0].y + dir.y };
+                        if (newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE) {
+                            setGameOver(true);
+                            playSound('crash');
+                            return prev;
+                        }
+                        if (prev.some(seg => seg.x === newHead.x && seg.y === newHead.y)) {
+                            setGameOver(true);
+                            playSound('crash');
+                            return prev;
+                        }
+                        const newSnake = [newHead, ...prev];
+                        if (newHead.x === food.x && newHead.y === food.y) {
+                            setScore(s => s + 1);
+                            setFood(spawnFood());
+                            playSound('eat');
+                        } else {
+                            newSnake.pop();
+                        }
+                        return newSnake;
+                    });
+                }, 150);
+                return () => clearInterval(moveSnake);
+            }, [dir, food, gameOver]);
+
+            const restart = () => {
+                setSnake([{ x: 5, y: 5 }]);
+                setFood(spawnFood());
+                setDir({ x: 1, y: 0 });
+                setScore(0);
+                setGameOver(false);
+            }
+
+            return (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-2xl w-[340px] border border-gray-300 overflow-hidden z-50 flex flex-col font-sans animate-in zoom-in duration-200">
+                    <div className="bg-gray-100 p-2 flex justify-between items-center border-b select-none">
+                        <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                            <Gamepad2 size={16} className="text-green-600" /> Snake Game
+                        </div>
+                        <button onClick={onClose} className="hover:bg-red-500 hover:text-white rounded p-1 transition"><X size={16} /></button>
+                    </div>
+                    <div className="p-4 bg-gray-900 flex flex-col items-center">
+                        <div className="mb-2 text-green-400 font-mono text-sm">SCORE: {score}</div>
+                        <div className="relative bg-black border-2 border-gray-700" style={{ width: GRID_SIZE * CELL_SIZE, height: GRID_SIZE * CELL_SIZE }}>
+                            <div className="absolute bg-red-500 rounded-full" style={{ width: CELL_SIZE - 2, height: CELL_SIZE - 2, left: food.x * CELL_SIZE + 1, top: food.y * CELL_SIZE + 1 }}></div>
+                            {snake.map((seg, i) => (
+                                <div key={i} className="absolute bg-green-500" style={{ width: CELL_SIZE - 1, height: CELL_SIZE - 1, left: seg.x * CELL_SIZE, top: seg.y * CELL_SIZE }}></div>
+                            ))}
+                            {gameOver && (
+                                <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white">
+                                    <div className="text-red-500 font-bold text-xl mb-2">GAME OVER</div>
+                                    <button onClick={restart} className="px-3 py-1 bg-white text-black text-xs font-bold rounded hover:bg-gray-200">RETRY</button>
+                                </div>
+                            )}
+                        </div>
+                        <div className="mt-2 text-gray-500 text-[10px]">Use Arrow Keys to Move</div>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- CARD MATCHING GAME COMPONENT ---
+        const CardMatchGame = ({ onClose }) => {
+            const PC_CARDS = [
+                { id: 1, icon: '🖥️', name: 'CPU', desc: 'หน่วยประมวลผลกลาง สมองของคอมพิวเตอร์' },
+                { id: 2, icon: '🟩', name: 'RAM', desc: 'หน่วยความจำชั่วคราว เก็บข้อมูลขณะใช้งาน' },
+                { id: 3, icon: '💾', name: 'HDD', desc: 'ฮาร์ดดิสก์ เก็บข้อมูลถาวรแบบจานหมุน' },
+                { id: 4, icon: '⚡', name: 'SSD', desc: 'Solid State Drive เก็บข้อมูลไว กว่า HDD มาก' },
+                { id: 5, icon: '🎮', name: 'GPU', desc: 'การ์ดจอ ประมวลผลภาพกราฟิก 3D' },
+                { id: 6, icon: '🔌', name: 'PSU', desc: 'Power Supply จ่ายไฟฟ้าให้ทุกชิ้นส่วน' },
+                { id: 7, icon: '🗂️', name: 'Motherboard', desc: 'เมนบอร์ด แผงวงจรหลักเชื่อมต่ออุปกรณ์ทั้งหมด' },
+                { id: 8, icon: '❄️', name: 'CPU Cooler', desc: 'ระบบระบายความร้อนให้ CPU ไม่ร้อนเกิน' },
+                { id: 9, icon: '🌐', name: 'NIC', desc: 'การ์ดเน็ตเวิร์ก เชื่อมต่ออินเทอร์เน็ต/LAN' },
+                { id: 10, icon: '🔊', name: 'Sound Card', desc: 'การ์ดเสียง ประมวลผลและส่งสัญญาณเสียง' },
+            ];
+
+            const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
+            const buildDeck = () => {
+                const iconCards = PC_CARDS.map(c => ({ uid: `icon-${c.id}`, pairId: c.id, type: 'icon', content: c.icon, label: c.name }));
+                const descCards = PC_CARDS.map(c => ({ uid: `desc-${c.id}`, pairId: c.id, type: 'desc', content: c.desc, label: c.name }));
+                return shuffle([...iconCards, ...descCards]);
+            };
+
+            const [deck, setDeck] = useState(() => buildDeck());
+            const [flipped, setFlipped] = useState([]);
+            const [matched, setMatched] = useState([]);
+            const [wrong, setWrong] = useState([]);
+            const [moves, setMoves] = useState(0);
+            const [time, setTime] = useState(0);
+            const [started, setStarted] = useState(false);
+            const [finished, setFinished] = useState(false);
+            const lockRef = useRef(false);
+
+            useEffect(() => {
+                if (!started || finished) return;
+                const t = setInterval(() => setTime(s => s + 1), 1000);
+                return () => clearInterval(t);
+            }, [started, finished]);
+
+            const handleFlip = (card) => {
+                if (lockRef.current) return;
+                if (matched.includes(card.pairId) && flipped.some(f => f.uid === card.uid)) return;
+                if (flipped.find(f => f.uid === card.uid)) return;
+                if (matched.includes(card.pairId)) return;
+                if (!started) setStarted(true);
+
+                const newFlipped = [...flipped, card];
+                setFlipped(newFlipped);
+
+                if (newFlipped.length === 2) {
+                    setMoves(m => m + 1);
+                    lockRef.current = true;
+                    const [a, b] = newFlipped;
+                    if (a.pairId === b.pairId && a.uid !== b.uid) {
+                        playSound('correct');
+                        const newMatched = [...matched, a.pairId];
+                        setMatched(newMatched);
+                        setFlipped([]);
+                        lockRef.current = false;
+                        if (newMatched.length === PC_CARDS.length) {
+                            setFinished(true);
+                            playSound('win');
+                        }
+                    } else {
+                        playSound('wrong');
+                        setWrong([a.uid, b.uid]);
+                        setTimeout(() => {
+                            setFlipped([]);
+                            setWrong([]);
+                            lockRef.current = false;
+                        }, 900);
+                    }
+                }
+            };
+
+            const restart = () => {
+                setDeck(buildDeck());
+                setFlipped([]);
+                setMatched([]);
+                setWrong([]);
+                setMoves(0);
+                setTime(0);
+                setStarted(false);
+                setFinished(false);
+                lockRef.current = false;
+            };
+
+            const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+
+            const isFlipped = (card) => flipped.find(f => f.uid === card.uid) || matched.includes(card.pairId);
+            const isWrong = (card) => wrong.includes(card.uid);
+            const isMatched = (card) => matched.includes(card.pairId);
+
+            const stars = moves <= 14 ? 3 : moves <= 20 ? 2 : 1;
+
+            return (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%',
+                    transform: 'translate(-50%,-50%)',
+                    width: 'min(780px,96vw)', maxHeight: '92vh',
+                    background: 'linear-gradient(135deg,rgba(15,23,42,0.97),rgba(30,41,59,0.97))',
+                    borderRadius: '16px', border: '1px solid rgba(99,102,241,0.4)',
+                    boxShadow: '0 25px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(99,102,241,0.2)',
+                    zIndex: 50, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                    fontFamily: 'sans-serif'
+                }}>
+                    {/* Header */}
+                    <div style={{
+                        background: 'linear-gradient(90deg,#4f46e5,#7c3aed)',
+                        padding: '12px 16px', display: 'flex', alignItems: 'center',
+                        justifyContent: 'space-between', flexShrink: 0
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 20 }}>🃏</span>
+                            <span style={{ color: 'white', fontWeight: 700, fontSize: 15 }}>PC Component Matching</span>
+                            <span style={{ background: 'rgba(255,255,255,0.15)', color: '#c7d2fe', fontSize: 11, padding: '2px 8px', borderRadius: 20 }}>จับคู่อุปกรณ์คอม</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span style={{ color: '#a5b4fc', fontSize: 13 }}>⏱ {fmtTime(time)}</span>
+                            <span style={{ color: '#a5b4fc', fontSize: 13 }}>🎯 {moves} ครั้ง</span>
+                            <button onClick={restart} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'white', padding: '4px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 13 }}>↺ เริ่มใหม่</button>
+                            <button onClick={onClose} style={{ background: 'rgba(239,68,68,0.3)', border: 'none', color: 'white', width: 28, height: 28, borderRadius: 8, cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                        </div>
+                    </div>
+
+                    {/* Progress */}
+                    <div style={{ padding: '8px 16px', background: 'rgba(0,0,0,0.3)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.1)', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${(matched.length / PC_CARDS.length) * 100}%`, background: 'linear-gradient(90deg,#4ade80,#22d3ee)', borderRadius: 3, transition: 'width 0.4s' }}></div>
+                        </div>
+                        <span style={{ color: '#64748b', fontSize: 12, whiteSpace: 'nowrap' }}>{matched.length}/{PC_CARDS.length} คู่</span>
+                    </div>
+
+                    {/* Legend */}
+                    <div style={{ padding: '6px 16px', flexShrink: 0, display: 'flex', gap: 16 }}>
+                        <span style={{ fontSize: 11, color: '#818cf8', display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 12, background: 'linear-gradient(135deg,#4f46e5,#7c3aed)', borderRadius: 3, display: 'inline-block' }}></span>การ์ด Icon อุปกรณ์</span>
+                        <span style={{ fontSize: 11, color: '#34d399', display: 'flex', alignItems: 'center', gap: 4 }}><span style={{ width: 12, height: 12, background: 'linear-gradient(135deg,#065f46,#047857)', borderRadius: 3, display: 'inline-block' }}></span>การ์ดคำอธิบาย</span>
+                    </div>
+
+                    {/* Grid */}
+                    <div style={{ overflowY: 'auto', padding: '8px 16px 16px', flex: 1 }}>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))',
+                            gap: 10
+                        }}>
+                            {deck.map(card => {
+                                const flp = isFlipped(card);
+                                const mch = isMatched(card);
+                                const wrg = isWrong(card);
+                                const isIcon = card.type === 'icon';
+                                return (
+                                    <div
+                                        key={card.uid}
+                                        onClick={() => !mch && !lockRef.current && handleFlip(card)}
+                                        style={{
+                                            height: isIcon ? 110 : 100,
+                                            borderRadius: 12,
+                                            cursor: mch ? 'default' : 'pointer',
+                                            perspective: 600,
+                                            transition: 'transform 0.15s',
+                                            transform: wrg ? 'scale(0.94)' : 'scale(1)'
+                                        }}
+                                    >
+                                        <div style={{
+                                            width: '100%', height: '100%',
+                                            position: 'relative',
+                                            transformStyle: 'preserve-3d',
+                                            transition: 'transform 0.45s cubic-bezier(.4,0,.2,1)',
+                                            transform: flp ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                                        }}>
+                                            {/* Back */}
+                                            <div style={{
+                                                position: 'absolute', inset: 0,
+                                                backfaceVisibility: 'hidden',
+                                                WebkitBackfaceVisibility: 'hidden',
+                                                borderRadius: 12,
+                                                background: 'linear-gradient(135deg,#1e3a5f,#0f2748)',
+                                                border: '2px solid rgba(99,102,241,0.35)',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                                            }}>
+                                                <span style={{ fontSize: 28, opacity: 0.5 }}>❓</span>
+                                            </div>
+                                            {/* Front */}
+                                            <div style={{
+                                                position: 'absolute', inset: 0,
+                                                backfaceVisibility: 'hidden',
+                                                WebkitBackfaceVisibility: 'hidden',
+                                                transform: 'rotateY(180deg)',
+                                                borderRadius: 12,
+                                                border: mch ? '2px solid #4ade80' : wrg ? '2px solid #f87171' : isIcon ? '2px solid rgba(99,102,241,0.6)' : '2px solid rgba(52,211,153,0.5)',
+                                                background: mch
+                                                    ? 'linear-gradient(135deg,rgba(6,78,59,0.9),rgba(4,120,87,0.8))'
+                                                    : wrg
+                                                        ? 'linear-gradient(135deg,rgba(127,29,29,0.9),rgba(153,27,27,0.8))'
+                                                        : isIcon
+                                                            ? 'linear-gradient(135deg,rgba(49,46,129,0.9),rgba(67,56,202,0.8))'
+                                                            : 'linear-gradient(135deg,rgba(6,78,59,0.7),rgba(4,120,87,0.6))',
+                                                display: 'flex', flexDirection: 'column',
+                                                alignItems: 'center', justifyContent: 'center',
+                                                padding: 8, gap: 4,
+                                                boxShadow: mch ? '0 0 16px rgba(74,222,128,0.35)' : '0 4px 12px rgba(0,0,0,0.4)',
+                                                overflow: 'hidden',
+                                            }}>
+                                                {isIcon ? (
+                                                    <>
+                                                        <span style={{ fontSize: 36, lineHeight: 1.1 }}>{card.content}</span>
+                                                        <span style={{ color: '#c7d2fe', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textAlign: 'center' }}>{card.label}</span>
+                                                        {mch && <span style={{ position: 'absolute', top: 4, right: 6, fontSize: 12, color: '#4ade80' }}>✓</span>}
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span style={{ color: '#6ee7b7', fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textAlign: 'center', padding: '0 4px' }}>{card.label}</span>
+                                                        <span style={{ color: '#a7f3d0', fontSize: 10, textAlign: 'center', lineHeight: 1.4, padding: '0 4px' }}>{card.content}</span>
+                                                        {mch && <span style={{ position: 'absolute', top: 4, right: 6, fontSize: 12, color: '#4ade80' }}>✓</span>}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    {/* Win Overlay */}
+                    {finished && (
+                        <div style={{
+                            position: 'absolute', inset: 0,
+                            background: 'rgba(0,0,0,0.82)',
+                            backdropFilter: 'blur(6px)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            zIndex: 60, borderRadius: 16
+                        }}>
+                            <div style={{
+                                background: 'linear-gradient(135deg,#1e3a5f,#312e81)',
+                                border: '1px solid rgba(139,92,246,0.5)',
+                                borderRadius: 20, padding: '40px 48px',
+                                textAlign: 'center', maxWidth: 380,
+                                boxShadow: '0 20px 60px rgba(0,0,0,0.6)'
+                            }}>
+                                <div style={{ fontSize: 64, marginBottom: 12 }}>🏆</div>
+                                <div style={{ color: '#fbbf24', fontSize: 24, fontWeight: 800, marginBottom: 4 }}>จับคู่สำเร็จ!</div>
+                                <div style={{ color: '#94a3b8', fontSize: 14, marginBottom: 20 }}>คุณจับคู่อุปกรณ์คอมพิวเตอร์ครบทั้ง 10 คู่แล้ว</div>
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 20 }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ color: '#a5b4fc', fontSize: 28, fontWeight: 700 }}>{fmtTime(time)}</div>
+                                        <div style={{ color: '#64748b', fontSize: 11 }}>เวลาที่ใช้</div>
+                                    </div>
+                                    <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }}></div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ color: '#a5b4fc', fontSize: 28, fontWeight: 700 }}>{moves}</div>
+                                        <div style={{ color: '#64748b', fontSize: 11 }}>จำนวนครั้ง</div>
+                                    </div>
+                                    <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }}></div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontSize: 28 }}>{'⭐'.repeat(stars)}</div>
+                                        <div style={{ color: '#64748b', fontSize: 11 }}>ดาว</div>
+                                    </div>
+                                </div>
+                                <button onClick={restart} style={{
+                                    width: '100%', padding: '12px',
+                                    background: 'linear-gradient(90deg,#4f46e5,#7c3aed)',
+                                    border: 'none', borderRadius: 12, color: 'white',
+                                    fontWeight: 700, fontSize: 15, cursor: 'pointer',
+                                    boxShadow: '0 4px 20px rgba(99,102,241,0.5)'
+                                }}>🔄 เล่นอีกครั้ง</button>
+                                <button onClick={onClose} style={{
+                                    width: '100%', padding: '10px', marginTop: 8,
+                                    background: 'rgba(255,255,255,0.05)',
+                                    border: '1px solid rgba(255,255,255,0.1)',
+                                    borderRadius: 12, color: '#94a3b8',
+                                    fontSize: 13, cursor: 'pointer'
+                                }}>ปิด</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- QUIZ GAME COMPONENT ---
+        const QuizGame = ({ onClose, onFinish }) => {
+            const questions = [
+                { q: "CPU คืออุปกรณ์ส่วนใดของคอมพิวเตอร์?", options: ["หน่วยประมวลผลกลาง", "หน่วยความจำ", "อุปกรณ์แสดงผล", "อุปกรณ์เก็บข้อมูล"], a: 0 },
+                { q: "RAM ย่อมาจากอะไร?", options: ["Read Access Memory", "Random Access Memory", "Run All Memory", "Read All Module"], a: 1 },
+                { q: "อุปกรณ์ใดทำหน้าที่เก็บข้อมูลถาวร?", options: ["RAM", "CPU", "Hard Disk / SSD", "Power Supply"], a: 2 },
+                { q: "หน้าที่หลักของ Power Supply คืออะไร?", options: ["ประมวลผลภาพ", "เก็บข้อมูล", "ระบายความร้อน", "จ่ายกระแสไฟฟ้า"], a: 3 },
+                { q: "Mainboard คืออะไร?", options: ["แผงวงจรหลัก", "แผงควบคุมเสียง", "หน้าจอ", "คีย์บอร์ด"], a: 0 },
+                { q: "การ์ดจอ (GPU) มีหน้าที่หลักคืออะไร?", options: ["ประมวลผลเสียง", "ประมวลผลภาพกราฟิก", "เชื่อมต่ออินเทอร์เน็ต", "สำรองข้อมูล"], a: 1 },
+                { q: "Windows 11 จัดเป็นซอฟต์แวร์ประเภทใด?", options: ["Utility", "Application", "Operating System (OS)", "Antivirus"], a: 2 },
+                { q: "BIOS ย่อมาจากอะไร?", options: ["Basic Input Output System", "Binary Input Operating System", "Base Internal Operating Software", "Basic Interface On System"], a: 0 },
+                { q: "ควรทาซิลิโคน (Thermal Paste) ที่อุปกรณ์ใด?", options: ["RAM", "Power Supply", "บนกระดอง CPU", "Slot PCI"], a: 2 },
+                { q: "สาย LAN ใช้สำหรับเชื่อมต่อสิ่งใด?", options: ["หน้าจอ", "เครื่องพิมพ์", "ระบบเครือข่าย/อินเทอร์เน็ต", "ลำโพง"], a: 2 },
+            ];
+
+            const [currentQ, setCurrentQ] = useState(0);
+            const [score, setScore] = useState(0);
+            const [finished, setFinished] = useState(false);
+
+            const handleAnswer = (index) => {
+                if (index === questions[currentQ].a) {
+                    setScore(s => s + 1);
+                    playSound('correct');
+                } else {
+                    playSound('wrong');
+                }
+
+                if (currentQ < questions.length - 1) {
+                    setCurrentQ(c => c + 1);
+                } else {
+                    setFinished(true);
+                    playSound('win');
+                }
+            };
+
+            return (
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-2xl w-[450px] border border-gray-300 overflow-hidden z-50 flex flex-col font-sans animate-in zoom-in duration-200">
+                    <div className="bg-blue-600 p-3 flex justify-between items-center text-white select-none">
+                        <div className="flex items-center gap-2 text-sm font-bold">
+                            <BookOpen size={18} /> Computer Quiz
+                        </div>
+                        {!finished && <button onClick={onClose} className="hover:bg-blue-700 rounded p-1 transition"><X size={16} /></button>}
+                    </div>
+
+                    <div className="p-6 bg-slate-50 min-h-[300px] flex flex-col">
+                        {!finished ? (
+                            <>
+                                <div className="flex justify-between items-center mb-4">
+                                    <span className="text-xs font-bold text-blue-600 bg-blue-100 px-2 py-1 rounded">Question {currentQ + 1}/{questions.length}</span>
+                                    <span className="text-xs text-gray-500">Score: {score}</span>
+                                </div>
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-bold text-gray-800 mb-2">{questions[currentQ].q}</h3>
+                                </div>
+                                <div className="grid gap-3 mt-auto">
+                                    {questions[currentQ].options.map((opt, i) => (
+                                        <button
+                                            key={i}
+                                            onClick={() => handleAnswer(i)}
+                                            className="text-left px-4 py-3 bg-white border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 transition shadow-sm text-sm"
+                                        >
+                                            {i + 1}. {opt}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-center space-y-6">
+                                <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shadow-inner">
+                                    <Award size={48} />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800">ทำแบบทดสอบเสร็จสิ้น!</h2>
+                                    <p className="text-gray-600 mt-2">คะแนนของคุณคือ</p>
+                                    <div className="text-5xl font-bold text-blue-600 mt-2">{score} / 10</div>
+                                </div>
+                                <button
+                                    onClick={() => { playSound('click'); onFinish(); }}
+                                    className="px-6 py-3 bg-green-600 text-white rounded-full font-bold shadow-lg hover:bg-green-700 transition-transform hover:scale-105 flex items-center gap-2"
+                                >
+                                    รับใบประกาศ / จบเกม <ChevronRight size={18} />
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- OS SIMULATOR COMPONENT ---
+        const OSSimulator = ({ build, userName, onComplete }) => {
+            const [step, setStep] = useState('off');
+            const [usbInserted, setUsbInserted] = useState(false);
+            const [progress, setProgress] = useState(0);
+            const [selectedDrive, setSelectedDrive] = useState(null);
+            const [openedApp, setOpenedApp] = useState(null); // 'snake', 'quiz'
+            const [showCongrats, setShowCongrats] = useState(false);
+
+            const cpuName = PARTS_DATA.cpu.find(c => c.id === build.cpu)?.name || "Unknown CPU";
+            const ramName = PARTS_DATA.ram.find(r => r.id === build.ram)?.name || "Unknown RAM";
+            const storageList = ['hdd1', 'hdd2', 'm2'].filter(k => build[k]).map(k => ({
+                key: k,
+                name: PARTS_DATA.storage.find(s => s.id === build[k])?.name
+            }));
+
+            const handlePowerOn = () => {
+                playSound('click');
+                if (!usbInserted) {
+                    alert("กรุณาเสียบ USB Flash Drive (Windows Installer) ก่อนเปิดเครื่อง");
+                    return;
+                }
+                playSound('boot');
+                setStep('bios');
+                setTimeout(() => setStep('boot_usb'), 4000);
+            };
+
+            const toggleUsb = () => {
+                playSound('click');
+                setUsbInserted(!usbInserted);
+            };
+
+            useEffect(() => {
+                if (step === 'boot_usb') {
+                    const timer = setTimeout(() => {
+                        setStep('boot_usb_ready');
+                    }, 4000);
+                    return () => clearTimeout(timer);
+                }
+            }, [step]);
+
+            const handleInstallStart = () => {
+                playSound('click');
+                setStep('drive_select');
+            };
+
+            const handleDriveSelect = (key) => {
+                playSound('click');
+                setSelectedDrive(key);
+                setStep('installing');
+            };
+
+            useEffect(() => {
+                if (step === 'installing') {
+                    const timer = setInterval(() => {
+                        setProgress(prev => {
+                            if (prev >= 100) {
+                                clearInterval(timer);
+                                setStep('restarting');
+                                setTimeout(() => setStep('desktop'), 3000);
+                                return 100;
+                            }
+                            return prev + 1;
+                        });
+                    }, 50);
+                    return () => clearInterval(timer);
+                }
+            }, [step]);
+
+            // Trigger Win sound on desktop load
+            useEffect(() => {
+                if (step === 'desktop') {
+                    playSound('win');
+                }
+            }, [step]);
+
+            return (
+                <div className="w-full h-[500px] bg-gray-900 rounded-xl border-8 border-gray-700 relative overflow-hidden flex flex-col items-center justify-center shadow-2xl">
+                    <div className="absolute bottom-2 text-gray-500 font-bold text-xs tracking-widest">GEMINI MONITOR</div>
+                    {step === 'off' && (
+                        <div className="text-center space-y-6">
+                            <div className="text-gray-500 font-dos">NO SIGNAL</div>
+                            <div className="flex gap-4 justify-center">
+                                <button onClick={toggleUsb} className={`px-4 py-2 rounded flex items-center gap-2 transition-all ${usbInserted ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300 hover:bg-gray-500'}`}><Usb size={18} /> {usbInserted ? 'USB เสียบอยู่' : 'เสียบ USB Windows'}</button>
+                                <button onClick={handlePowerOn} className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-2 shadow-lg hover:shadow-green-500/50 transition-all"><Power size={18} /> เปิดเครื่อง</button>
+                            </div>
+                        </div>
+                    )}
+                    {step === 'bios' && (
+                        <div className="absolute inset-0 bg-black p-8 font-dos text-white text-left text-sm leading-relaxed">
+                            <div>American Megatrends Inc.</div>
+                            <div>BIOS Date: 01/12/2026 15:23:45 Ver: 1.0.5</div>
+                            <br />
+                            <div>CPU : {cpuName}</div>
+                            <div>Memory : {ramName} OK</div>
+                            <br />
+                            <div>Detecting Storage...</div>
+                            {storageList.map(s => <div key={s.key} className="ml-4">Detected: {s.name}</div>)}
+                            <br />
+                            <div>USB Device: Windows 11 Installer</div>
+                            <br />
+                            <div className="mt-8">Booting from USB Device<span className="blink">_</span></div>
+                        </div>
+                    )}
+                    {step === 'boot_usb' && (
+                        <div className="absolute inset-0 bg-black flex flex-col items-center justify-center">
+                            <div className="mb-12 grid grid-cols-2 gap-1"><div className="w-10 h-10 bg-[#00A4EF]"></div><div className="w-10 h-10 bg-[#00A4EF]"></div><div className="w-10 h-10 bg-[#00A4EF]"></div><div className="w-10 h-10 bg-[#00A4EF]"></div></div>
+                            <div className="w-10 h-10 border-4 border-t-white border-b-transparent border-l-transparent border-r-transparent rounded-full animate-spin"></div>
+                        </div>
+                    )}
+                    {(step === 'boot_usb_ready' || step === 'drive_select' || step === 'installing' || step === 'restarting') && (
+                        <div className="absolute inset-0 bg-purple-900 flex items-center justify-center font-sans">
+                            <div className="bg-white w-[80%] h-[80%] rounded shadow-2xl flex flex-col overflow-hidden">
+                                <div className="bg-white border-b p-4 flex justify-between items-center"><span className="font-bold text-gray-700">Windows Setup</span></div>
+                                <div className="p-8 flex-grow flex flex-col">
+                                    {step === 'boot_usb_ready' && (
+                                        <div className="text-center my-auto space-y-6">
+                                            <div className="w-16 h-16 bg-blue-500 mx-auto rounded-none grid grid-cols-2 gap-1 p-1"><div className="bg-white/80"></div><div className="bg-white/80"></div><div className="bg-white/80"></div><div className="bg-white/80"></div></div>
+                                            <h2 className="text-2xl font-bold text-gray-800">Windows 11</h2>
+                                            <p className="text-gray-500">Language to install: Thai (Thailand)</p>
+                                            <button onClick={handleInstallStart} className="bg-blue-600 text-white px-8 py-3 rounded hover:bg-blue-700">Install Now</button>
+                                        </div>
+                                    )}
+                                    {step === 'drive_select' && (
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-bold">เลือกไดรฟ์ที่จะติดตั้ง Windows:</h3>
+                                            <div className="border rounded divide-y">
+                                                {storageList.map(s => (
+                                                    <div key={s.key} onClick={() => handleDriveSelect(s.key)} className="p-3 hover:bg-blue-50 cursor-pointer flex items-center gap-3"><HardDrive size={20} className="text-gray-500" /><div><div className="font-medium">{s.name}</div><div className="text-xs text-gray-400">Unallocated Space</div></div></div>
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-gray-500">* คลิกที่ชื่อไดรฟ์เพื่อเริ่มติดตั้ง</p>
+                                        </div>
+                                    )}
+                                    {step === 'installing' && (
+                                        <div className="my-auto space-y-4">
+                                            <h3 className="text-lg font-bold">กำลังติดตั้ง Windows...</h3>
+                                            <div className="space-y-2 text-sm text-gray-600"><div className="flex justify-between"><span>Copying Windows files</span><span>100%</span></div><div className="flex justify-between"><span>Getting files ready</span><span>{progress}%</span></div><div className="flex justify-between"><span>Installing features</span><span>{progress > 50 ? 'Done' : 'Pending'}</span></div><div className="flex justify-between"><span>Installing updates</span><span>{progress > 90 ? 'Done' : 'Pending'}</span></div></div>
+                                            <div className="h-2 bg-gray-200 rounded-full overflow-hidden"><div className="h-full bg-green-500 transition-all duration-75" style={{ width: `${progress}%` }}></div></div>
+                                        </div>
+                                    )}
+                                    {step === 'restarting' && (
+                                        <div className="my-auto text-center"><h3 className="text-xl font-bold mb-4">Windows needs to restart to continue</h3><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div></div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {step === 'desktop' && (
+                        <div className="absolute inset-0 bg-cover bg-center font-sans select-none overflow-hidden bg-win11">
+                            {/* Fireworks Overlay */}
+                            <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+                                <div className="firework fw-1" style={{ left: '20%', top: '30%' }}></div>
+                                <div className="firework fw-2" style={{ left: '80%', top: '30%' }}></div>
+                                <div className="firework fw-3" style={{ left: '50%', top: '20%' }}></div>
+                            </div>
+
+                            {/* Desktop Icons */}
+                            <div className="absolute top-4 left-4 grid gap-4 text-center z-10">
+                                <div className="flex flex-col items-center gap-1 group cursor-pointer w-20">
+                                    <div className="w-10 h-10 bg-white/10 rounded flex items-center justify-center border border-white/20 shadow-sm group-hover:bg-white/20 transition"><Trash2 size={24} className="text-white" /></div><span className="text-xs text-white drop-shadow-md">Recycle Bin</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 group cursor-pointer w-20">
+                                    <div className="w-10 h-10 bg-blue-500 rounded flex items-center justify-center border border-white/20 shadow-sm group-hover:bg-blue-400 transition"><Monitor size={24} className="text-white" /></div><span className="text-xs text-white drop-shadow-md">This PC</span>
+                                </div>
+                                <div className="flex flex-col items-center gap-1 group cursor-pointer w-20">
+                                    <div className="w-10 h-10 bg-white rounded flex items-center justify-center border border-white/20 shadow-sm group-hover:bg-gray-100 transition relative overflow-hidden"><span className="font-bold text-blue-600 text-xl font-serif">e</span></div><span className="text-xs text-white drop-shadow-md">Edge</span>
+                                </div>
+                                {/* Snake Game Icon */}
+                                <div className="flex flex-col items-center gap-1 group cursor-pointer w-20" onClick={() => setOpenedApp('snake')}>
+                                    <div className="w-10 h-10 bg-green-500 rounded flex items-center justify-center border border-white/20 shadow-sm group-hover:bg-green-400 transition relative overflow-hidden">
+                                        <Gamepad2 size={24} className="text-white" />
+                                    </div>
+                                    <span className="text-xs text-white drop-shadow-md">Snake Game</span>
+                                </div>
+                                {/* Quiz Game Icon */}
+                                <div className="flex flex-col items-center gap-1 group cursor-pointer w-20" onClick={() => setOpenedApp('quiz')}>
+                                    <div className="w-10 h-10 bg-blue-600 rounded flex items-center justify-center border border-white/20 shadow-sm group-hover:bg-blue-500 transition relative overflow-hidden">
+                                        <BookOpen size={24} className="text-white" />
+                                    </div>
+                                    <span className="text-xs text-white drop-shadow-md text-nowrap">Computer Quiz</span>
+                                </div>
+                                {/* Card Match Game Icon */}
+                                <div className="flex flex-col items-center gap-1 group cursor-pointer w-20" onClick={() => setOpenedApp('cardmatch')}>
+                                    <div className="w-10 h-10 rounded flex items-center justify-center border border-white/20 shadow-sm group-hover:brightness-110 transition relative overflow-hidden" style={{ background: 'linear-gradient(135deg,#4f46e5,#7c3aed)' }}>
+                                        <span style={{ fontSize: 22 }}>🃏</span>
+                                    </div>
+                                    <span className="text-xs text-white drop-shadow-md text-nowrap">Card Match</span>
+                                </div>
+                            </div>
+
+                            {/* Windows / Apps */}
+                            {openedApp === 'snake' && <SnakeGame onClose={() => setOpenedApp(null)} />}
+                            {openedApp === 'quiz' && <QuizGame onClose={() => setOpenedApp(null)} onFinish={() => { setOpenedApp(null); setShowCongrats(true); }} />}
+                            {openedApp === 'cardmatch' && <CardMatchGame onClose={() => setOpenedApp(null)} />}
+
+                            {/* Welcome Window */}
+                            {showCongrats && (
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-md rounded-lg shadow-2xl w-[480px] overflow-hidden animate-in fade-in zoom-in duration-300 border border-white/50 z-30">
+                                    <div className="h-8 bg-gray-100/50 flex justify-end items-center px-2 space-x-2 border-b"><div className="w-3 h-3 bg-red-400 rounded-full"></div></div>
+                                    <div className="p-8 text-center">
+                                        <div className="w-20 h-20 bg-yellow-100 rounded-full mx-auto mb-4 flex items-center justify-center text-yellow-600 shadow-inner"><Award size={48} /></div>
+                                        <h1 className="text-2xl font-bold text-gray-800 mb-2">ยินดีด้วยคุณมาถึงด่านสุดท้ายแล้ว</h1>
+                                        <p className="text-gray-600 mb-6">คุณได้ทำการประกอบคอมพิวเตอร์และติดตั้งระบบปฏิบัติการจนสำเร็จ</p>
+                                        <button onClick={() => { playSound('click'); onComplete(); }} className="w-full py-3 bg-blue-600 text-white rounded-md font-medium shadow-md hover:bg-blue-700 transition-all flex items-center justify-center gap-2">ดูสรุปผลคะแนน <ChevronRight size={16} /></button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Taskbar */}
+                            <div className="absolute bottom-0 w-full h-12 bg-[#f3f9ff]/85 backdrop-blur-md flex items-center justify-between px-4 border-t border-white/30 z-50">
+                                <div className="w-1/3 flex items-center pl-2">
+                                    <div className="flex items-center gap-2 text-gray-600 text-xs hover:bg-white/50 px-2 py-1 rounded cursor-default transition"><CloudSun size={18} /><span className="font-medium">28°C Partly Sunny</span></div>
+                                </div>
+                                <div className="w-1/3 flex items-center justify-center gap-2">
+                                    <div className="w-8 h-8 hover:bg-white/50 rounded flex items-center justify-center transition duration-200 cursor-pointer p-1"><div className="w-full h-full bg-blue-500 rounded-sm grid grid-cols-2 gap-[1px] p-[2px] shadow-sm"><div className="bg-blue-300"></div><div className="bg-blue-300"></div><div className="bg-blue-300"></div><div className="bg-blue-300"></div></div></div>
+                                    <div className="w-8 h-8 hover:bg-white/50 rounded flex items-center justify-center transition duration-200 cursor-pointer"><Search size={18} className="text-gray-600" /></div>
+                                    <div className="w-8 h-8 hover:bg-white/50 rounded flex items-center justify-center transition duration-200 cursor-pointer"><div className="w-4 h-4 border border-gray-500 bg-gray-300 rounded-sm"></div><div className="w-4 h-4 border border-gray-500 bg-transparent rounded-sm absolute -ml-2 -mt-2"></div></div>
+                                    <div className="w-8 h-8 hover:bg-white/50 rounded flex items-center justify-center transition duration-200 cursor-pointer"><div className="bg-yellow-400 w-5 h-4 rounded-sm border-b-2 border-yellow-600 shadow-sm relative"><div className="bg-blue-300 w-5 h-1 absolute -top-1 left-0 rounded-t-sm"></div></div></div>
+                                    <div className="w-8 h-8 hover:bg-white/50 rounded flex items-center justify-center transition duration-200 cursor-pointer font-serif font-bold text-blue-600 text-lg">e</div>
+                                </div>
+                                <div className="w-1/3 flex items-center justify-end gap-3 text-xs text-gray-700">
+                                    <div className="hover:bg-white/50 px-1 py-1 rounded cursor-default"><ChevronUp size={14} /></div>
+                                    <div className="flex gap-2 hover:bg-white/50 px-2 py-1 rounded cursor-default"><Wifi size={14} /><Volume2 size={14} /><Battery size={14} /></div>
+                                    <div className="text-right hover:bg-white/50 px-2 py-1 rounded cursor-default"><div>10:45 AM</div><div>1/12/2026</div></div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- 2D Visualizer Component ---
+        const PCVisualizer = ({ build, cableStatus, onConnectCable, isCablingMode, theme }) => {
+            const containerRef = useRef(null);
+            const [dragState, setDragState] = useState(null);
+            const [explosion, setExplosion] = useState(null);
+
+            const caseData = PARTS_DATA.case.find(c => c.id === build.case) || PARTS_DATA.case[0];
+            const mbData = PARTS_DATA.motherboard.find(m => m.id === build.motherboard);
+            const cpuData = PARTS_DATA.cpu.find(c => c.id === build.cpu);
+            const gpuData = PARTS_DATA.gpu.find(g => g.id === build.gpu);
+            const psuData = PARTS_DATA.psu.find(p => p.id === build.psu);
+            const hdd1Data = PARTS_DATA.storage.find(s => s.id === build.hdd1);
+            const hdd2Data = PARTS_DATA.storage.find(s => s.id === build.hdd2);
+            const ramData = PARTS_DATA.ram.find(r => r.id === build.ram);
+
+            const hasPsu = !!psuData;
+            const hasMb = !!mbData;
+
+            const cablesConfig = [
+                { id: 'atx24', label: '24-Pin Power', required: hasMb, source: { x: 50, y: 90 }, target: { x: mbData?.size === 'E-ATX' ? 88 : 80, y: 40 } },
+                { id: 'eps8', label: '8-Pin CPU', required: hasMb, source: { x: 40, y: 90 }, target: { x: 22, y: 12 } },
+                { id: 'gpuPcie', label: 'PCIe Power', required: !!(gpuData && gpuData.id !== 'gpu0'), source: { x: 60, y: 90 }, target: { x: 40 + (gpuData?.length || 0) * 10, y: 60 } },
+                { id: 'frontPanel', label: 'Front Panel', required: hasMb, source: { x: 95, y: 80 }, target: { x: 80, y: 85 } },
+                { id: 'sata1', label: 'SATA Data 1', required: !!hdd1Data, source: { x: 85, y: 65 }, target: { x: 90, y: 80 } },
+                { id: 'sata2', label: 'SATA Data 2', required: !!hdd2Data, source: { x: 85, y: 70 }, target: { x: 90, y: 95 } }
+            ];
+
+            const handleDragStart = (e, cableId) => {
+                playSound('click');
+                if (cableStatus[cableId]) return;
+                if (e.type === 'touchstart') document.body.style.overflow = 'hidden';
+                if (containerRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    setDragState({ cableId, x: clientX - rect.left, y: clientY - rect.top });
+                }
+            };
+            const handleDragMove = (e) => {
+                if (!dragState || !containerRef.current) return;
+                const rect = containerRef.current.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                setDragState(prev => ({ ...prev, x: clientX - rect.left, y: clientY - rect.top }));
+            };
+            const handleDragEnd = (e) => {
+                if (!dragState) return;
+                if (e.type === 'touchend') document.body.style.overflow = '';
+
+                const cable = cablesConfig.find(c => c.id === dragState.cableId);
+
+                if (cable && containerRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const currentXPercent = (dragState.x / rect.width) * 100;
+                    const currentYPercent = (dragState.y / rect.height) * 100;
+
+                    const dist = Math.sqrt(Math.pow(currentXPercent - cable.target.x, 2) + Math.pow(currentYPercent - cable.target.y, 2));
+                    if (dist < 10) {
+                        playSound('success');
+                        onConnectCable(cable.id);
+                    } else {
+                        const wrongTarget = cablesConfig.find(c => {
+                            if (c.id === cable.id || !c.required) return false;
+                            const d = Math.sqrt(Math.pow(currentXPercent - c.target.x, 2) + Math.pow(currentYPercent - c.target.y, 2));
+                            return d < 10;
+                        });
+
+                        if (wrongTarget) {
+                            playSound('error');
+                            setExplosion({ x: dragState.x, y: dragState.y });
+                            setTimeout(() => setExplosion(null), 500);
+                        }
+                    }
+                }
+                setDragState(null);
+            };
+
+            useEffect(() => {
+                if (dragState) {
+                    window.addEventListener('mousemove', handleDragMove);
+                    window.addEventListener('mouseup', handleDragEnd);
+                    window.addEventListener('touchmove', handleDragMove, { passive: false });
+                    window.addEventListener('touchend', handleDragEnd);
+                }
+                return () => {
+                    window.removeEventListener('mousemove', handleDragMove);
+                    window.removeEventListener('mouseup', handleDragEnd);
+                    window.removeEventListener('touchmove', handleDragMove);
+                    window.removeEventListener('touchend', handleDragEnd);
+                };
+            }, [dragState]);
+
+            const getPixelCoords = (percentCoords) => {
+                if (!containerRef.current) return { x: 0, y: 0 };
+                return { x: (percentCoords.x / 100) * containerRef.current.clientWidth, y: (percentCoords.y / 100) * containerRef.current.clientHeight };
+            };
+
+            const containerStyle = {
+                backgroundColor: caseData.color,
+                borderColor: caseData.borderColor
+            };
+            const mbStyle = mbData ? { backgroundColor: mbData.color, width: mbData.size === 'mATX' ? '65%' : (mbData.size === 'E-ATX' ? '85%' : '75%'), height: mbData.size === 'mATX' ? '65%' : '80%' } : { backgroundColor: '#2d3748', width: '75%', height: '80%' };
+
+            return (
+                <div ref={containerRef} className={`relative w-full h-[400px] md:h-[500px] border-[12px] rounded-xl shadow-2xl overflow-hidden transition-all duration-500 bg-gray-100 flex flex-col select-none touch-none ${theme === 'matrix' ? 'border-green-800' : ''}`} style={containerStyle}>
+                    <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#444 1px, transparent 1px)', backgroundSize: '10px 10px' }}></div>
+                    {explosion && <div className="explosion" style={{ left: explosion.x, top: explosion.y }}></div>}
+
+                    {/* VISIBLE SOCKETS (Always visible in cabling mode) */}
+                    {isCablingMode && cablesConfig.map(cable => {
+                        if (!cable.required) return null;
+                        const w = cable.id === 'atx24' ? '12px' : cable.id.includes('sata') ? '20px' : '16px';
+                        const h = cable.id === 'atx24' ? '40px' : '12px';
+                        return (
+                            <div
+                                key={`socket-${cable.id}`}
+                                className="socket-port"
+                                style={{ left: `${cable.target.x}%`, top: `${cable.target.y}%`, width: w, height: h }}
+                                title={`เสียบสาย ${cable.label} ที่นี่`}
+                            >
+                                <div className="socket-pins"></div>
+                            </div>
+                        );
+                    })}
+
+                    {hasPsu && (
+                        <svg className="absolute inset-0 w-full h-full z-30 pointer-events-none overflow-visible">
+                            {cablesConfig.map(cable => {
+                                if (!cable.required) return null;
+                                const isConnected = cableStatus[cable.id];
+                                const isDragging = dragState?.cableId === cable.id;
+                                const startPx = getPixelCoords(cable.source);
+                                const targetPx = getPixelCoords(cable.target);
+                                let endPx = isConnected ? targetPx : startPx;
+                                if (isDragging) endPx = { x: dragState.x, y: dragState.y };
+                                else if (!isConnected) endPx = { x: startPx.x, y: startPx.y - 20 };
+                                return <CableConnector key={cable.id} id={cable.id} label={cable.label} isConnected={isConnected} startPos={startPx} endPos={endPx} targetPos={targetPx} onDragStart={handleDragStart} />;
+                            })}
+                        </svg>
+                    )}
+                    {dragState && (
+                        <>
+                            {cablesConfig.map(cable => {
+                                if (cable.id === dragState.cableId) return <TargetZone key={cable.id} x={cable.target.x} y={cable.target.y} active={true} label={cable.label} />;
+                                return null;
+                            })}
+                        </>
+                    )}
+                    <div className="flex-grow relative p-4 z-10 pointer-events-none">
+                        <div className="absolute top-8 left-16 transition-all duration-300 rounded-md border border-white/10 shadow-lg flex flex-col p-2 pointer-events-auto" style={mbStyle}>
+                            <span className="text-[8px] text-white/50 absolute bottom-1 right-2">{mbData?.size || 'NO MB'}</span>
+                            <div className="absolute top-[20%] left-1/2 -translate-x-1/2 w-20 h-20 md:w-24 md:h-24 bg-gray-300/10 border border-gray-400/50 rounded flex items-center justify-center">
+                                {cpuData ? <div className="relative w-16 h-16 md:w-20 md:h-20 bg-gray-800 rounded-full flex items-center justify-center border-4 border-gray-600 shadow-md"><div className="w-8 h-8 rounded-full" style={{ backgroundColor: cpuData.color }}></div></div> : <span className="text-[10px] text-white/40">CPU Socket</span>}
+                            </div>
+                            <div className="absolute top-[20%] right-4 flex gap-1 h-20">
+                                {[0, 1, 2, 3].map(i => {
+                                    const isInstalled = ramData && i < ramData.count;
+                                    return <div key={i} className={`w-2 h-full border border-gray-600 rounded-sm ${isInstalled ? 'bg-green-600' : 'bg-black/40'}`}></div>;
+                                })}
+                            </div>
+                            {gpuData && gpuData.id !== 'gpu0' && (
+                                <div className="absolute top-[55%] left-0 h-12 bg-gray-800 border-2 border-gray-600 rounded-r-lg shadow-xl z-20 flex items-center px-2" style={{ width: `${40 + (gpuData.length * 15)}%`, background: `linear-gradient(90deg, #2d3748 0%, ${gpuData.color} 100%)` }}>
+                                    <span className="text-[10px] text-white truncate">{gpuData.name}</span>
+                                </div>
+                            )}
+                        </div>
+                        {hdd1Data && <div className="absolute bottom-24 right-4 w-16 h-20 bg-gray-800 border-2 border-gray-500 rounded flex flex-col items-center justify-center pointer-events-auto"><span className="text-[8px] text-white">SATA 1</span></div>}
+                        {hdd2Data && <div className="absolute bottom-2 right-4 w-16 h-20 bg-gray-800 border-2 border-gray-500 rounded flex flex-col items-center justify-center pointer-events-auto"><span className="text-[8px] text-white">SATA 2</span></div>}
+                    </div>
+                    <div className="h-24 w-full bg-gray-900 border-t-4 border-gray-700 relative flex items-center justify-center z-20 pointer-events-auto">
+                        {psuData && <div className="w-1/2 h-full absolute left-0 flex items-center justify-center border-r border-gray-700" style={{ backgroundColor: psuData.color }}><div className="flex flex-col items-center"><Zap className="text-white" /><span className="text-xs font-bold text-white mt-1">{psuData.name}</span></div></div>}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        function PCBuilderGame() {
+            const [gameState, setGameState] = useState('building');
+            const [mode, setMode] = useState('parts'); // parts, cables, os
+            const [userInfo, setUserInfo] = useState({ name: 'นักเรียน', surname: '', room: '-' });
+            const [build, setBuild] = useState({});
+            const [cableStatus, setCableStatus] = useState({});
+            const [totalPrice, setTotalPrice] = useState(0);
+
+            // --- Settings State ---
+            const [volume, setVolume] = useState(0.5);
+            const [theme, setTheme] = useState('light');
+            const [showSettings, setShowSettings] = useState(false);
+
+            // --- Mini Games State ---
+            const [showMiniGameMenu, setShowMiniGameMenu] = useState(false);
+            const [showCardGame, setShowCardGame] = useState(false);
+
+            // Close dropdown on outside click / Escape
+            useEffect(() => {
+                const handleKey = (e) => { if (e.key === 'Escape') { setShowMiniGameMenu(false); setShowCardGame(false); } };
+                const handleClick = () => setShowMiniGameMenu(false);
+                document.addEventListener('keydown', handleKey);
+                document.addEventListener('click', handleClick);
+                return () => { document.removeEventListener('keydown', handleKey); document.removeEventListener('click', handleClick); };
+            }, []);
+
+            // Hide loading screen & read session from Parent
+            useEffect(() => {
+                const loader = document.getElementById('loading');
+                if (loader) loader.style.display = 'none';
+
+                try {
+                    const session = JSON.parse(localStorage.getItem('edutoken_session'));
+                    if (session) {
+                        setUserInfo({ name: session.firstName || 'นักเรียน', surname: session.lastName || '', room: session.room || '-' });
+                    }
+                } catch (e) { }
+            }, []);
+
+            // Update Global Volume
+            useEffect(() => {
+                GLOBAL_VOLUME = volume;
+            }, [volume]);
+
+            useEffect(() => {
+                let total = 0;
+                Object.keys(build).forEach(key => {
+                    const partId = build[key];
+                    const category = CATEGORY_MAP[key];
+                    if (category && PARTS_DATA[category]) {
+                        const part = PARTS_DATA[category].find(p => p.id === partId);
+                        if (part) total += part.price;
+                    }
+                });
+                setTotalPrice(total);
+            }, [build]);
+
+            const handleStart = (e) => {
+                e.preventDefault();
+                playSound('click');
+                if (userInfo.name && userInfo.surname && userInfo.room) {
+                    setGameState('building');
+                } else {
+                    alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                }
+            };
+
+            const handleSelectPart = (key, id) => {
+                playSound('click');
+                let nextBuild = { ...build, [key]: id };
+                let resetMessage = null;
+
+                if (key === 'cpu') {
+                    const newCpu = PARTS_DATA.cpu.find(c => c.id === id);
+                    const currentMobo = PARTS_DATA.motherboard.find(m => m.id === build.motherboard);
+                    if (currentMobo && currentMobo.socket !== newCpu.socket) {
+                        nextBuild.motherboard = null;
+                        nextBuild.ram = null;
+                        resetMessage = `เปลี่ยน CPU เป็น ${newCpu.socket} ระบบได้นำเมนบอร์ดเดิมออก กรุณาเลือกใหม่`;
+                    }
+                }
+
+                if (key === 'motherboard') {
+                    const newMobo = PARTS_DATA.motherboard.find(m => m.id === id);
+                    const currentRam = PARTS_DATA.ram.find(r => r.id === build.ram);
+                    if (currentRam && currentRam.type !== newMobo.ramType) {
+                        nextBuild.ram = null;
+                        resetMessage = `เปลี่ยนเมนบอร์ดเป็น ${newMobo.ramType} ระบบได้นำแรมเดิมออก กรุณาเลือกใหม่`;
+                    }
+                }
+
+                setBuild(nextBuild);
+                if (resetMessage) alert(resetMessage);
+            };
+
+            const checkCompatibility = (category, part) => {
+                if (category === 'motherboard' && build.cpu) {
+                    const selectedCpu = PARTS_DATA.cpu.find(c => c.id === build.cpu);
+                    if (selectedCpu && part.socket !== selectedCpu.socket) return { compatible: false, reason: `ต้องใช้เมนบอร์ด Socket ${selectedCpu.socket}` };
+                }
+                if (category === 'cpu' && build.motherboard) {
+                    const selectedMobo = PARTS_DATA.motherboard.find(m => m.id === build.motherboard);
+                    if (selectedMobo && part.socket !== selectedMobo.socket) return { compatible: false, reason: `เมนบอร์ดปัจจุบันรองรับ Socket ${selectedMobo.socket}` };
+                }
+                if (category === 'ram' && build.motherboard) {
+                    const selectedMobo = PARTS_DATA.motherboard.find(m => m.id === build.motherboard);
+                    if (selectedMobo && part.type !== selectedMobo.ramType) return { compatible: false, reason: `เมนบอร์ดรองรับแรม ${selectedMobo.ramType} เท่านั้น` };
+                }
+                return { compatible: true };
+            };
+
+            const handleConnectCable = (cableId) => {
+                setCableStatus(prev => ({ ...prev, [cableId]: true }));
+            };
+
+            const handleModeChange = (newMode) => {
+                playSound('click');
+                if (newMode === 'os') {
+                    const requiredCables = ['atx24', 'eps8', 'frontPanel'];
+                    if (build.gpu && build.gpu !== 'gpu0') requiredCables.push('gpuPcie');
+                    if (build.hdd1) requiredCables.push('sata1');
+                    if (build.hdd2) requiredCables.push('sata2');
+
+                    const missingCables = requiredCables.filter(c => !cableStatus[c]);
+                    if (missingCables.length > 0) {
+                        alert(`กรุณาต่อสายไฟให้ครบก่อนลง Windows ครับ\nสายที่ขาด: ${missingCables.join(', ')}`);
+                        return;
+                    }
+                    const hasStorage = build.hdd1 || build.hdd2 || build.m2;
+                    if (!hasStorage) {
+                        alert('ไม่พบฮาร์ดดิสก์! กรุณาติดตั้ง Storage ก่อนลง Windows');
+                        return;
+                    }
+                }
+                setMode(newMode);
+            };
+
+            const handleFinishGame = () => {
+                playSound('success');
+                setGameState('summary');
+                try {
+                    let messageSent = false;
+                    const msg = { type: 'ADD_TOKEN', amount: 10 };
+                    if (window.parent && window.parent !== window) {
+                        window.parent.postMessage(msg, '*');
+                        messageSent = true;
+                    }
+                    if (window.parent && window.parent.parent && window.parent.parent !== window) {
+                        window.parent.parent.postMessage(msg, '*');
+                        messageSent = true;
+                    }
+                    if (window.top && window.top !== window) {
+                        window.top.postMessage(msg, '*');
+                        messageSent = true;
+                    }
+                } catch (e) {
+                    console.error("Token PostMessage Error: ", e);
+                }
+            };
+
+            const resetGame = () => {
+                playSound('click');
+                setBuild({});
+                setCableStatus({});
+                setMode('parts');
+                setGameState('building');
+                // Keep userInfo intact from session
+            };
+
+            // --- Theme Helper ---
+            const getThemeClass = () => {
+                switch (theme) {
+                    case 'dark': return 'bg-slate-900 text-white';
+                    case 'rgb': return 'bg-slate-800 text-white animate-rgb';
+                    case 'matrix': return 'bg-black text-green-400 font-mono';
+                    default: return 'bg-slate-100 text-slate-900';
+                }
+            };
+            const getCardClass = () => {
+                if (theme === 'dark' || theme === 'rgb') return 'bg-slate-800 border-slate-700 text-white';
+                if (theme === 'matrix') return 'bg-black border-green-700 text-green-400 shadow-none border';
+                return 'bg-white border-gray-100 text-gray-800';
+            };
+
+            // --- Render Sections ---
+            if (gameState === 'intro') {
+                return (
+                    <div className={`min-h-screen flex items-center justify-center p-4 font-sans transition-colors duration-500 ${getThemeClass()}`}>
+                        <div className={`p-8 rounded-2xl shadow-2xl max-w-md w-full ${getCardClass()}`}>
+                            <div className="text-center mb-6">
+                                <Monitor className={`w-16 h-16 mx-auto mb-2 ${theme === 'matrix' ? 'text-green-500' : 'text-blue-600'}`} />
+                                <h1 className="text-3xl font-bold">PC Builder Simulator</h1>
+                                <p className="opacity-70">เกมจำลองประกอบคอมพิวเตอร์</p>
+                            </div>
+                            <form onSubmit={handleStart} className="space-y-4">
+                                <input type="text" required className={`block w-full px-3 py-2 border rounded ${theme === 'matrix' ? 'bg-black border-green-600 text-green-400' : 'bg-white border-gray-300'}`} placeholder="ชื่อจริง" value={userInfo.name} onChange={e => setUserInfo({ ...userInfo, name: e.target.value })} />
+                                <input type="text" required className={`block w-full px-3 py-2 border rounded ${theme === 'matrix' ? 'bg-black border-green-600 text-green-400' : 'bg-white border-gray-300'}`} placeholder="นามสกุล" value={userInfo.surname} onChange={e => setUserInfo({ ...userInfo, surname: e.target.value })} />
+                                <select required className={`block w-full px-3 py-2 border rounded ${theme === 'matrix' ? 'bg-black border-green-600 text-green-400' : 'bg-white border-gray-300'}`} value={userInfo.room} onChange={e => setUserInfo({ ...userInfo, room: e.target.value })}>
+                                    <option value="">-- เลือกห้อง --</option>
+                                    <option value="ปวช.2/5">ปวช.2/5</option>
+                                    <option value="ปวช.2/6">ปวช.2/6</option>
+                                    <option value="ปวช.2/7">ปวช.2/7</option>
+                                </select>
+                                <button type="submit" className={`w-full py-3 rounded font-bold transition-all ${theme === 'matrix' ? 'bg-green-700 hover:bg-green-600 text-black' : 'bg-blue-600 text-white hover:bg-blue-700'}`}>เริ่มประกอบคอม</button>
+                            </form>
+                        </div>
+
+                        {/* Settings Button on Intro */}
+                        <div className="absolute top-4 right-4">
+                            <button onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-full hover:bg-black/10 transition">
+                                <Settings className={theme === 'matrix' ? 'text-green-500' : 'text-gray-600'} />
+                            </button>
+                            {showSettings && (
+                                <div className={`absolute top-12 right-0 p-4 rounded-xl shadow-xl w-64 z-50 border ${getCardClass()}`}>
+                                    <div className="mb-4">
+                                        <label className="text-xs font-bold uppercase mb-2 block opacity-70">Volume ({Math.round(volume * 100)}%)</label>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => setVolume(Math.max(0, parseFloat((volume - 0.1).toFixed(1))))} className="p-1 rounded hover:opacity-70"><Minus size={16} /></button>
+                                            <div className="flex-grow h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                <div className={`h-full ${theme === 'matrix' ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${volume * 100}%` }}></div>
+                                            </div>
+                                            <button onClick={() => setVolume(Math.min(1, parseFloat((volume + 0.1).toFixed(1))))} className="p-1 rounded hover:opacity-70"><Plus size={16} /></button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold uppercase mb-2 block opacity-70">Theme</label>
+                                        <div className="grid grid-cols-4 gap-2">
+                                            <button onClick={() => setTheme('light')} className={`p-2 rounded border flex justify-center items-center h-10 ${theme === 'light' ? 'ring-2 ring-blue-500' : 'bg-gray-100 text-black'}`} title="Light"><Sun size={16} /></button>
+                                            <button onClick={() => setTheme('dark')} className={`p-2 rounded border flex justify-center items-center h-10 bg-slate-900 text-white ${theme === 'dark' ? 'ring-2 ring-blue-500' : ''}`} title="Dark"><Moon size={16} /></button>
+                                            <button onClick={() => setTheme('rgb')} className={`p-2 rounded border flex justify-center items-center h-10 bg-gradient-to-r from-pink-500 to-yellow-500 text-white ${theme === 'rgb' ? 'ring-2 ring-blue-500' : ''}`} title="RGB"><Palette size={16} /></button>
+                                            <button onClick={() => setTheme('matrix')} className={`p-2 rounded border flex justify-center items-center h-10 bg-black text-green-500 ${theme === 'matrix' ? 'ring-2 ring-green-500' : ''}`} title="Matrix"><Terminal size={16} /></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (gameState === 'summary') {
+                return (
+                    <div className={`min-h-screen py-10 px-4 font-sans transition-colors duration-500 ${getThemeClass()}`}>
+                        <div className={`max-w-3xl mx-auto rounded-xl shadow-xl overflow-hidden ${getCardClass()}`}>
+                            <div className={`p-6 text-center ${theme === 'matrix' ? 'bg-green-900 text-green-200' : 'bg-green-600 text-white'}`}>
+                                <CheckCircle className="w-16 h-16 mx-auto mb-2" />
+                                <h2 className="text-3xl font-bold">ประกอบสำเร็จ!</h2>
+                            </div>
+                            <div className="p-8">
+                                <h3 className="text-xl font-bold">ผู้ประกอบ: {userInfo.name} {userInfo.surname}</h3>
+                                <p className="opacity-70 mb-4">ห้อง: {userInfo.room}</p>
+                                <div className="text-right mb-4"><p className={`text-3xl font-bold ${theme === 'matrix' ? 'text-green-400' : 'text-blue-600'}`}>฿{totalPrice.toLocaleString()}</p></div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {Object.entries(build).map(([key, id]) => {
+                                        const category = CATEGORY_MAP[key];
+                                        const part = PARTS_DATA[category]?.find(p => p.id === id);
+                                        if (!part) return null;
+                                        return <div key={key} className={`p-3 rounded border flex justify-between ${theme === 'dark' || theme === 'rgb' ? 'bg-white/5 border-white/10' : theme === 'matrix' ? 'border-green-800' : 'bg-gray-50 border-gray-200'}`}><span>{key}</span><span className="font-bold">{part.name}</span></div>;
+                                    })}
+                                </div>
+                                <div className="mt-8 flex justify-center">
+                                    <button onClick={resetGame} className={`px-6 py-3 rounded flex gap-2 ${theme === 'matrix' ? 'bg-green-800 text-black hover:bg-green-700' : 'bg-gray-800 text-white hover:bg-gray-900'}`}><RotateCcw /> ประกอบเครื่องใหม่</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            const partCategories = [
+                { key: 'cpu', label: 'ซีพียู (CPU)', icon: <Cpu size={18} />, source: 'cpu' },
+                { key: 'motherboard', label: 'เมนบอร์ด', icon: <Smartphone size={18} />, source: 'motherboard' },
+                { key: 'ram', label: 'แรม (RAM)', icon: <Monitor size={18} />, source: 'ram' },
+                { key: 'gpu', label: 'การ์ดจอ (GPU)', icon: <Monitor size={18} />, source: 'gpu' },
+                { key: 'hdd1', label: 'HDD SATA 1', icon: <HardDrive size={18} />, source: 'storage', filter: p => p.type === 'sata' },
+                { key: 'hdd2', label: 'HDD SATA 2', icon: <HardDrive size={18} />, source: 'storage', filter: p => p.type === 'sata' },
+                { key: 'm2', label: 'Nvme M.2', icon: <HardDrive size={18} />, source: 'storage', filter: p => p.type === 'm2' },
+                { key: 'psu', label: 'Power Supply', icon: <Zap size={18} />, source: 'psu' },
+                { key: 'case', label: 'เคส (Case)', icon: <Box size={18} />, source: 'case' },
+            ];
+
+            return (
+                <div className={`min-h-screen font-sans flex flex-col transition-colors duration-500 ${getThemeClass()}`}>
+                    <header className={`shadow-sm p-4 sticky top-0 z-30 transition-colors duration-500 ${getCardClass()}`}>
+                        <div className="max-w-7xl mx-auto flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <Monitor className={theme === 'matrix' ? 'text-green-500' : 'text-blue-600'} />
+                                <span className="font-bold text-lg hidden sm:block">PC Builder Room {userInfo.room}</span>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <div className="text-xs opacity-70">งบประมาณ</div>
+                                    <div className={`font-bold text-xl ${theme === 'matrix' ? 'text-green-400' : 'text-blue-600'}`}>฿{totalPrice.toLocaleString()}</div>
+                                </div>
+
+                                {/* Mini Game Dropdown Button */}
+                                <div className="relative" onClick={e => e.stopPropagation()}>
+                                    <button
+                                        onClick={() => { setShowMiniGameMenu(v => !v); setShowSettings(false); }}
+                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg font-semibold text-sm transition-all shadow-sm ${theme === 'matrix'
+                                                ? 'bg-green-900 text-green-300 hover:bg-green-800 border border-green-700'
+                                                : 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700'
+                                            }`}
+                                    >
+                                        <span style={{ fontSize: 16 }}>🃏</span>
+                                        <span className="hidden sm:inline">มินิเกม</span>
+                                        <span style={{ fontSize: 10, opacity: 0.8 }}>{showMiniGameMenu ? '▲' : '▼'}</span>
+                                    </button>
+
+                                    {showMiniGameMenu && (
+                                        <div
+                                            className={`absolute top-12 right-0 rounded-xl shadow-2xl w-56 z-50 border overflow-hidden ${getCardClass()}`}
+                                            style={{ minWidth: 200 }}
+                                        >
+                                            {/* Header of dropdown */}
+                                            <div style={{
+                                                padding: '8px 14px',
+                                                background: theme === 'matrix' ? '#052e16' : 'linear-gradient(90deg,#4f46e5,#7c3aed)',
+                                                color: 'white', fontSize: 11, fontWeight: 700, letterSpacing: 0.5
+                                            }}>🎮 เลือกมินิเกม</div>
+
+                                            {/* Card Match */}
+                                            <button
+                                                onClick={() => { setShowCardGame(true); setShowMiniGameMenu(false); playSound('click'); }}
+                                                className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-all ${theme === 'dark' || theme === 'rgb'
+                                                        ? 'hover:bg-white/10'
+                                                        : theme === 'matrix'
+                                                            ? 'hover:bg-green-900/40'
+                                                            : 'hover:bg-indigo-50'
+                                                    }`}
+                                            >
+                                                <div style={{
+                                                    width: 36, height: 36, borderRadius: 10,
+                                                    background: 'linear-gradient(135deg,#4f46e5,#7c3aed)',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    flexShrink: 0
+                                                }}>
+                                                    <span style={{ fontSize: 18 }}>🃏</span>
+                                                </div>
+                                                <div>
+                                                    <div className="font-semibold text-sm">Card Matching</div>
+                                                    <div className="text-xs opacity-60">จับคู่อุปกรณ์คอม 10 คู่</div>
+                                                </div>
+                                            </button>
+
+                                            {/* Divider */}
+                                            <div className="border-t opacity-20 mx-3"></div>
+
+                                            {/* Info */}
+                                            <div className="px-4 py-2 text-xs opacity-50 italic">
+                                                🎯 Snake &amp; Quiz อยู่ใน Desktop
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button disabled={true} className="bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow cursor-not-allowed">
+                                    <span className="hidden sm:inline">...</span>
+                                </button>
+
+                                {/* Settings Toggle */}
+                                <div className="relative">
+                                    <button onClick={() => setShowSettings(!showSettings)} className={`p-2 rounded-full transition ${theme === 'light' ? 'hover:bg-gray-100' : 'hover:bg-white/10'}`}>
+                                        <Settings />
+                                    </button>
+
+                                    {showSettings && (
+                                        <div className={`absolute top-12 right-0 p-4 rounded-xl shadow-xl w-64 z-50 border ${getCardClass()}`}>
+                                            <div className="mb-4">
+                                                <label className="text-xs font-bold uppercase mb-2 block opacity-70">Volume ({Math.round(volume * 100)}%)</label>
+                                                <div className="flex items-center gap-2">
+                                                    <button onClick={() => setVolume(Math.max(0, parseFloat((volume - 0.1).toFixed(1))))} className="p-1 rounded hover:opacity-70"><Minus size={16} /></button>
+                                                    <div className="flex-grow h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                        <div className={`h-full ${theme === 'matrix' ? 'bg-green-500' : 'bg-blue-500'}`} style={{ width: `${volume * 100}%` }}></div>
+                                                    </div>
+                                                    <button onClick={() => setVolume(Math.min(1, parseFloat((volume + 0.1).toFixed(1))))} className="p-1 rounded hover:opacity-70"><Plus size={16} /></button>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-bold uppercase mb-2 block opacity-70">Theme</label>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    <button onClick={() => setTheme('light')} className={`p-2 rounded border flex justify-center items-center h-10 ${theme === 'light' ? 'ring-2 ring-blue-500' : 'bg-gray-100 text-black'}`} title="Light"><Sun size={16} /></button>
+                                                    <button onClick={() => setTheme('dark')} className={`p-2 rounded border flex justify-center items-center h-10 bg-slate-900 text-white ${theme === 'dark' ? 'ring-2 ring-blue-500' : ''}`} title="Dark"><Moon size={16} /></button>
+                                                    <button onClick={() => setTheme('rgb')} className={`p-2 rounded border flex justify-center items-center h-10 bg-gradient-to-r from-pink-500 to-yellow-500 text-white ${theme === 'rgb' ? 'ring-2 ring-blue-500' : ''}`} title="RGB"><Palette size={16} /></button>
+                                                    <button onClick={() => setTheme('matrix')} className={`p-2 rounded border flex justify-center items-center h-10 bg-black text-green-500 ${theme === 'matrix' ? 'ring-2 ring-green-500' : ''}`} title="Matrix"><Terminal size={16} /></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* === CARD MATCH GAME OVERLAY === */}
+                    {showCardGame && (
+                        <div
+                            style={{
+                                position: 'fixed', inset: 0,
+                                background: 'rgba(0,0,0,0.75)',
+                                backdropFilter: 'blur(4px)',
+                                zIndex: 9999,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}
+                            onClick={(e) => { if (e.target === e.currentTarget) setShowCardGame(false); }}
+                        >
+                            <CardMatchGame onClose={() => setShowCardGame(false)} />
+                        </div>
+                    )}
+
+                    <main className="flex-grow max-w-7xl mx-auto w-full p-4 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+                        <div className="lg:col-span-5 space-y-4 overflow-y-auto h-full pb-20">
+
+                            <div className={`flex rounded-lg shadow p-1 border ${theme === 'dark' || theme === 'rgb' ? 'bg-slate-800 border-slate-700' : theme === 'matrix' ? 'bg-black border-green-800' : 'bg-white border-gray-200'}`}>
+                                <button
+                                    onClick={() => handleModeChange('parts')}
+                                    className={`flex-1 py-2 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${mode === 'parts' ? (theme === 'matrix' ? 'bg-green-900 text-green-200' : 'bg-blue-100 text-blue-700') : 'opacity-70 hover:opacity-100'}`}
+                                >
+                                    <Box size={16} /> 1. อุปกรณ์
+                                </button>
+                                <button
+                                    onClick={() => handleModeChange('cables')}
+                                    className={`flex-1 py-2 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${mode === 'cables' ? (theme === 'matrix' ? 'bg-green-900 text-green-200' : 'bg-yellow-100 text-yellow-700') : 'opacity-70 hover:opacity-100'}`}
+                                >
+                                    <Cable size={16} /> 2. สายไฟ
+                                </button>
+                                <button
+                                    onClick={() => handleModeChange('os')}
+                                    className={`flex-1 py-2 rounded-md font-medium text-sm flex items-center justify-center gap-2 transition-all ${mode === 'os' ? (theme === 'matrix' ? 'bg-green-900 text-green-200' : 'bg-purple-100 text-purple-700') : 'opacity-70 hover:opacity-100'}`}
+                                >
+                                    <Monitor size={16} /> 3. Windows
+                                </button>
+                            </div>
+
+                            {mode === 'parts' && (
+                                <div className="space-y-4">
+                                    {partCategories.map((cat) => {
+                                        let items = PARTS_DATA[cat.source] || [];
+                                        if (cat.filter) items = items.filter(cat.filter);
+                                        return (
+                                            <div key={cat.key} className={`rounded-xl shadow-sm p-4 border transition-colors ${getCardClass()}`}>
+                                                <div className="flex items-center gap-2 mb-3 font-semibold border-b pb-2 opacity-90">
+                                                    {cat.icon} {cat.label}
+                                                </div>
+                                                <div className="grid grid-cols-1 gap-2">
+                                                    {items.map((part) => {
+                                                        const { compatible, reason } = checkCompatibility(cat.key, part);
+                                                        const isSelected = build[cat.key] === part.id;
+                                                        return (
+                                                            <button
+                                                                key={part.id}
+                                                                onClick={() => compatible && handleSelectPart(cat.key, part.id)}
+                                                                disabled={!compatible}
+                                                                className={`text-left p-3 rounded-lg border flex justify-between items-center transition-all ${!compatible ? 'opacity-40 cursor-not-allowed' :
+                                                                        isSelected
+                                                                            ? (theme === 'matrix' ? 'border-green-500 bg-green-900/30' : 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500')
+                                                                            : (theme === 'dark' || theme === 'rgb' ? 'border-gray-700 hover:bg-white/5' : theme === 'matrix' ? 'border-green-900 hover:bg-green-900/20' : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50')
+                                                                    }`}
+                                                            >
+                                                                <div>
+                                                                    <div className="font-medium text-sm flex items-center gap-2">
+                                                                        {part.name}
+                                                                        {!compatible && <span className="text-xs text-red-500 bg-red-100 px-1 rounded flex items-center gap-1"><Lock size={10} /> {reason}</span>}
+                                                                    </div>
+                                                                    {part.type && <div className="text-xs opacity-60 capitalize">{part.type}</div>}
+                                                                </div>
+                                                                <div className={`text-sm font-bold ${theme === 'matrix' ? 'text-green-400' : 'text-blue-600'}`}>฿{part.price.toLocaleString()}</div>
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {mode === 'cables' && (
+                                <div className={`rounded-xl shadow-sm p-6 border text-center transition-colors ${getCardClass()}`}>
+                                    <Cable className={`w-12 h-12 mx-auto mb-4 ${theme === 'matrix' ? 'text-green-500' : 'text-yellow-500'}`} />
+                                    <h3 className="text-lg font-bold mb-2">โหมดเดินสายไฟ (Cabling)</h3>
+                                    <p className="text-sm opacity-70 mb-4">
+                                        ลากหัวต่อสายไฟ จากด้านล่างหรือด้านข้าง ไปยังจุดเชื่อมต่อบนเมนบอร์ดที่มีแสงกระพริบ
+                                    </p>
+                                    <div className={`text-left text-sm space-y-2 p-4 rounded-lg ${theme === 'dark' || theme === 'rgb' ? 'bg-black/20' : theme === 'matrix' ? 'bg-green-900/10 border border-green-800' : 'bg-gray-50'}`}>
+                                        <div className="font-semibold opacity-90">รายการสายที่ต้องต่อ:</div>
+                                        <ul className="list-disc pl-5 space-y-1 opacity-80">
+                                            <li className={cableStatus['atx24'] ? 'text-green-500 line-through' : ''}>24-Pin Main (ไฟเลี้ยงบอร์ด)</li>
+                                            <li className={cableStatus['eps8'] ? 'text-green-500 line-through' : ''}>8-Pin CPU (ไฟเลี้ยงซีพียู)</li>
+                                            <li className={cableStatus['frontPanel'] ? 'text-green-500 line-through' : ''}>Front Panel (ปุ่มเปิดเครื่อง)</li>
+                                            {build.gpu && build.gpu !== 'gpu0' && <li className={cableStatus['gpuPcie'] ? 'text-green-500 line-through' : ''}>PCIe Power (ไฟการ์ดจอ)</li>}
+                                            {build.hdd1 && <li className={cableStatus['sata1'] ? 'text-green-500 line-through' : ''}>SATA Data 1</li>}
+                                            {build.hdd2 && <li className={cableStatus['sata2'] ? 'text-green-500 line-through' : ''}>SATA Data 2</li>}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+
+                            {mode === 'os' && (
+                                <div className={`rounded-xl shadow-sm p-6 border text-center transition-colors ${getCardClass()}`}>
+                                    <Monitor className={`w-12 h-12 mx-auto mb-4 ${theme === 'matrix' ? 'text-green-500' : 'text-purple-500'}`} />
+                                    <h3 className="text-lg font-bold mb-2">โหมดลงโปรแกรม (OS Setup)</h3>
+                                    <p className="text-sm opacity-70 mb-4">
+                                        จำลองการเปิดเครื่องและติดตั้ง Windows 11 ผ่าน USB
+                                    </p>
+                                    <div className={`text-left text-sm space-y-2 p-4 rounded-lg border ${theme === 'dark' || theme === 'rgb' ? 'bg-black/20 border-white/10' : theme === 'matrix' ? 'bg-green-900/10 border-green-800 text-green-300' : 'bg-purple-50 border-purple-100 text-purple-800'}`}>
+                                        <div className="font-semibold">ขั้นตอนการเล่น:</div>
+                                        <ol className="list-decimal pl-5 space-y-1 opacity-80">
+                                            <li>เสียบ USB Flash Drive (คลิกปุ่ม)</li>
+                                            <li>กดปุ่มเปิดเครื่อง (Power On)</li>
+                                            <li>รอหน้า BIOS POST ตรวจสอบอุปกรณ์</li>
+                                            <li>กด Install Now ในหน้า Windows Setup</li>
+                                            <li>เลือก Drive ที่ต้องการลง Windows</li>
+                                            <li>รอการติดตั้งเสร็จสมบูรณ์</li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="lg:col-span-7">
+                            <div className="sticky top-24">
+                                <h2 className="text-xl font-bold mb-4 flex items-center gap-2 opacity-90">
+                                    <Monitor />
+                                    {mode === 'parts' && 'ภาพจำลองการประกอบ'}
+                                    {mode === 'cables' && 'ภาพจำลองการเดินสายไฟ'}
+                                    {mode === 'os' && 'หน้าจอมอนิเตอร์'}
+                                </h2>
+
+                                {mode !== 'os' ? (
+                                    <PCVisualizer
+                                        build={build}
+                                        cableStatus={cableStatus}
+                                        onConnectCable={handleConnectCable}
+                                        isCablingMode={mode === 'cables'}
+                                        theme={theme}
+                                    />
+                                ) : (
+                                    <OSSimulator
+                                        build={build}
+                                        userName={userInfo.name}
+                                        onComplete={handleFinishGame}
+                                    />
+                                )}
+
+                                {mode === 'cables' && (
+                                    <div className={`mt-4 flex items-center gap-2 text-sm p-3 rounded-lg border ${theme === 'matrix' ? 'bg-green-900/20 border-green-800 text-green-400' : 'bg-yellow-50 border-yellow-200 text-yellow-700'}`}>
+                                        <MousePointer2 size={16} />
+                                        <span>Tip: ใช้เมาส์หรือนิ้วลากหัวต่อสีเหลืองไปยังจุดที่มีไฟกระพริบ</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                    </main>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<PCBuilderGame />);
+    </script>
+</body>
+
+</html>

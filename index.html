@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8" />
+  <!-- Cross-platform Viewport -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <!-- Theme Color for Browser UI -->
+  <meta name="theme-color" content="#0D0E1A" />
+  <meta name="msapplication-TileColor" content="#0D0E1A" />
+  <!-- iOS Safari -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="EduToken" />
+  <!-- Android Chrome -->
+  <meta name="mobile-web-app-capable" content="yes" />
+  <!-- SEO / Social -->
+  <meta name="application-name" content="EduToken" />
+  <meta name="format-detection" content="telephone=no" />
+  <title>EduToken | ระบบจัดการรายวิชา</title>
+  <meta name="description" content="ระบบจัดการรายวิชาออนไลน์สำหรับนักเรียน ปวช.2 พร้อมระบบโทเค้นและกระดานอันดับ" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&family=Sarabun:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css?v=2026032303" />
+</head>
+
+<body>
+
+  <!-- ===== ANIMATED BACKGROUND ===== -->
+  <div class="bg-aurora" id="bg-aurora">
+    <div class="aurora-blob"></div>
+    <div class="aurora-blob"></div>
+    <div class="aurora-blob"></div>
+    <div class="aurora-blob"></div>
+  </div>
+  <div class="bg-grid"></div>
+  <div class="particles" id="particles-container"></div>
+
+  <!-- ===== AUTH SECTION ===== -->
+  <div class="auth-wrapper" id="auth-wrapper">
+    <!-- Hero Left -->
+    <div class="auth-hero">
+      <div class="hero-content">
+        <div class="hero-logo">
+          <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+            <circle cx="28" cy="28" r="28" fill="url(#logoGrad)" />
+            <path d="M18 22l10-6 10 6v10l-10 6-10-6V22z" stroke="white" stroke-width="2" fill="none" />
+            <circle cx="28" cy="28" r="4" fill="white" />
+            <defs>
+              <linearGradient id="logoGrad" x1="0" y1="0" x2="56" y2="56">
+                <stop offset="0%" stop-color="#6C63FF" />
+                <stop offset="100%" stop-color="#3EC6E0" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <span class="hero-logo-text">EduToken</span>
+        </div>
+        <h1 class="hero-title">ยินดีต้อนรับสู่<br /><span class="gradient-text">ระบบจัดการรายวิชา</span></h1>
+        <p class="hero-desc">สะสมโทเค้น เรียนรู้อย่างสนุก แข่งขันกับเพื่อนในห้อง<br />พร้อมระบบกระดานอันดับแบบเรียลไทม์
+        </p>
+        <div class="hero-badges">
+          <div class="badge"><span class="badge-icon">🏆</span> Leaderboard</div>
+          <div class="badge"><span class="badge-icon">⚡</span> Real-time</div>
+          <div class="badge"><span class="badge-icon">🎯</span> Token System</div>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <span class="stat-num">3</span>
+            <span class="stat-label">ห้องเรียน</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-num">∞</span>
+            <span class="stat-label">โทเค้น</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat-item">
+            <span class="stat-num">100+</span>
+            <span class="stat-label">นักเรียน</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+      </div>
+    </div>
+
+    <!-- Auth Right -->
+    <div class="auth-panel">
+      <div class="auth-card" id="auth-card">
+
+        <!-- Tab Switcher -->
+        <div class="auth-tabs">
+          <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">เข้าสู่ระบบ</button>
+          <button class="tab-btn" id="tab-register" onclick="switchTab('register')">สมัครสมาชิก</button>
+          <div class="tab-indicator" id="tab-indicator"></div>
+        </div>
+
+        <!-- LOGIN FORM -->
+        <div class="auth-form active" id="form-login">
+          <h2 class="form-title">ยินดีต้อนรับ 👋</h2>
+          <p class="form-subtitle">เข้าสู่ระบบ EduToken</p>
+
+          <!-- Google Sign In -->
+          <button class="btn-google" id="btn-google-login" onclick="signInWithGoogle()">
+            <svg width="20" height="20" viewBox="0 0 48 48">
+              <path fill="#FFC107"
+                d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z" />
+              <path fill="#FF3D00"
+                d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+              <path fill="#4CAF50"
+                d="M24 44c5.2 0 10-1.9 13.6-5l-6.3-5.3C29.3 35.3 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8H6.3C9.6 35.5 16.3 44 24 44z" />
+              <path fill="#1976D2"
+                d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.3 5.3l.1-.1 6.3 5.3C37.1 38.7 44 33 44 24c0-1.3-.1-2.6-.4-3.9z" />
+            </svg>
+            เข้าสู่ระบบด้วย Google
+          </button>
+
+          <div class="divider"><span>หรือ</span></div>
+
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <div class="input-wrapper">
+              <span class="input-icon">👤</span>
+              <input type="text" id="login-username" placeholder="ใส่ Username" autocomplete="off" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="input-wrapper">
+              <span class="input-icon">🔑</span>
+              <input type="password" id="login-password" placeholder="ใส่ Password ของคุณ" />
+            </div>
+          </div>
+          <div class="form-error" id="login-error"></div>
+          <button class="btn-primary" id="btn-login" onclick="handleLogin()">
+            <span>เข้าสู่ระบบ</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
+          <p class="auth-switch">ยังไม่มีบัญชี? <a href="#" onclick="switchTab('register')">สมัครสมาชิก</a></p>
+          <div class="admin-login-hint"><a href="#" onclick="showAdminLoginModal()" id="admin-login-link">🔐
+              เข้าสู่ระบบสำหรับผู้ดูแล</a></div>
+        </div>
+
+        <!-- REGISTER FORM -->
+        <div class="auth-form" id="form-register">
+          <h2 class="form-title">สร้างบัญชีใหม่ ✨</h2>
+          <p class="form-subtitle">เริ่มสะสมโทเค้นวันนี้เลย!</p>
+
+          <!-- Google Sign Up -->
+          <button class="btn-google" id="btn-google-register" onclick="signInWithGoogle()">
+            <svg width="20" height="20" viewBox="0 0 48 48">
+              <path fill="#FFC107"
+                d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z" />
+              <path fill="#FF3D00"
+                d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.5 6.5 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z" />
+              <path fill="#4CAF50"
+                d="M24 44c5.2 0 10-1.9 13.6-5l-6.3-5.3C29.3 35.3 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8H6.3C9.6 35.5 16.3 44 24 44z" />
+              <path fill="#1976D2"
+                d="M43.6 20.1H42V20H24v8h11.3c-.8 2.2-2.3 4.1-4.3 5.3l.1-.1 6.3 5.3C37.1 38.7 44 33 44 24c0-1.3-.1-2.6-.4-3.9z" />
+            </svg>
+            สมัครด้วย Google
+          </button>
+
+          <div class="divider"><span>หรือกรอกข้อมูล</span></div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="reg-firstname">ชื่อจริง</label>
+              <div class="input-wrapper">
+                <span class="input-icon">✏️</span>
+                <input type="text" id="reg-firstname" placeholder="ชื่อจริง" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="reg-lastname">นามสกุล</label>
+              <div class="input-wrapper">
+                <span class="input-icon">✏️</span>
+                <input type="text" id="reg-lastname" placeholder="นามสกุล" />
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-nickname">ชื่อเล่น</label>
+            <div class="input-wrapper">
+              <span class="input-icon">😎</span>
+              <input type="text" id="reg-nickname" placeholder="ชื่อเล่นของคุณ" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-username">Username</label>
+            <div class="input-wrapper">
+              <span class="input-icon">👤</span>
+              <input type="text" id="reg-username" placeholder="Username สำหรับเข้าระบบ" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Password</label>
+            <div class="input-wrapper">
+              <span class="input-icon">🔑</span>
+              <input type="password" id="reg-password" placeholder="ตั้งรหัสผ่าน (อย่างน้อย 8 ตัว)" minlength="8" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-email">อีเมล</label>
+            <div class="input-wrapper">
+              <span class="input-icon">📧</span>
+              <input type="email" id="reg-email" placeholder="example@email.com" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-phone">เบอร์โทรศัพท์</label>
+            <div class="input-wrapper">
+              <span class="input-icon">📱</span>
+              <input type="tel" id="reg-phone" placeholder="0XX-XXX-XXXX" maxlength="10" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-room">ห้องเรียน</label>
+            <div class="input-wrapper select-wrapper">
+              <span class="input-icon">🏫</span>
+              <select id="reg-room">
+                <option value="">-- เลือกห้องเรียน --</option>
+                <option value="ปวช.2/8">ปวช.2/8</option>
+                <option value="ปวช.2/9">ปวช.2/9</option>
+                <option value="ปวช.2/10">ปวช.2/10</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-error" id="register-error"></div>
+          <button class="btn-primary" id="btn-register" onclick="handleRegister()">
+            <span>สมัครสมาชิก</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </button>
+          <p class="auth-switch">มีบัญชีแล้ว? <a href="#" onclick="switchTab('login')">เข้าสู่ระบบ</a></p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DASHBOARD ===== -->
+  <div class="dashboard-wrapper hidden" id="dashboard-wrapper">
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-brand">
+        <svg width="36" height="36" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="28" fill="url(#navLogoGrad)" />
+          <path d="M18 22l10-6 10 6v10l-10 6-10-6V22z" stroke="white" stroke-width="2" fill="none" />
+          <circle cx="28" cy="28" r="4" fill="white" />
+          <defs>
+            <linearGradient id="navLogoGrad" x1="0" y1="0" x2="56" y2="56">
+              <stop offset="0%" stop-color="#6C63FF" />
+              <stop offset="100%" stop-color="#3EC6E0" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <span class="nav-title">EduToken</span>
+      </div>
+      <div class="nav-links">
+        <a href="#" class="nav-link active" onclick="showSection('dashboard')">🏠 หน้าหลัก</a>
+        <a href="#" class="nav-link" onclick="showSection('leaderboard')">🏆 อันดับ</a>
+        <a href="#" class="nav-link" onclick="showSection('shop')">🛒 แลกรางวัล</a>
+        <a href="#" class="nav-link" onclick="showSection('quiz')">📝 แบบทดสอบ</a>
+        <a href="#" class="nav-link" onclick="showSection('assignment')">🗂️ เช็คคะแนนงาน</a>
+        <a href="#" class="nav-link" onclick="showSection('chat')">💬 Community</a>
+        <a href="#" class="nav-link" onclick="showSection('game')">🎮 เกมประกอบคอม</a>
+        <a href="#" class="nav-link"
+          onclick="showSection('cardgame'); if(!document.getElementById('cardgame-root').dataset.loaded){initCardGame();document.getElementById('cardgame-root').dataset.loaded='1';}">🃏
+          เกมจับคู่</a>
+        <a href="#" class="nav-link" onclick="showSection('profile')">👤 โปรไฟล์</a>
+        <a href="#" class="nav-link nav-link-admin hidden" id="nav-admin-link" onclick="showSection('adminbackend')">⚙️
+          หลังบ้าน</a>
+      </div>
+      <div class="nav-user" id="nav-user-info">
+        <button class="theme-toggle-btn" onclick="cycleTheme()" title="เปลี่ยนธีม">🎨</button>
+        <div class="nav-tokens" id="nav-token-display">
+          <span class="token-fire">🔥</span>
+          <span id="nav-token-count">0</span>
+          <span class="token-label">Token</span>
+        </div>
+        <div class="nav-avatar" id="nav-avatar" onclick="toggleUserMenu()">
+          <span id="nav-avatar-text">?</span>
+        </div>
+        <div class="user-menu hidden" id="user-menu">
+          <div class="user-menu-info">
+            <span id="menu-name">ชื่อ</span>
+            <span id="menu-room" class="menu-room-badge">ห้อง</span>
+          </div>
+          <div class="menu-divider"></div>
+          <button class="menu-item" onclick="showSection('profile')">👤 โปรไฟล์</button>
+          <button class="menu-item logout-item" onclick="handleLogout()">🚪 ออกจากระบบ</button>
+        </div>
+      </div>
+      <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu hidden" id="mobile-menu">
+      <a href="#" onclick="showSection('dashboard'); toggleMobileMenu()">🏠 หน้าหลัก</a>
+      <a href="#" onclick="showSection('leaderboard'); toggleMobileMenu()">🏆 อันดับ</a>
+      <a href="#" onclick="showSection('shop'); toggleMobileMenu()">🛒 แลกรางวัล</a>
+      <a href="#" onclick="showSection('quiz'); toggleMobileMenu()">📝 แบบทดสอบ</a>
+      <a href="#" onclick="showSection('assignment'); toggleMobileMenu()">🗂️ เช็คคะแนนงาน</a>
+      <a href="#" onclick="showSection('chat'); toggleMobileMenu()">💬 Community</a>
+      <a href="#" onclick="showSection('game'); toggleMobileMenu()">🎮 เกมประกอบคอม</a>
+      <a href="#"
+        onclick="showSection('cardgame'); toggleMobileMenu(); if(!document.getElementById('cardgame-root').dataset.loaded){initCardGame();document.getElementById('cardgame-root').dataset.loaded='1';}">🃏
+        เกมจับคู่</a>
+      <a href="#" onclick="showSection('profile'); toggleMobileMenu()">👤 โปรไฟล์</a>
+      <a href="#" class="hidden" id="mobile-admin-link" onclick="showSection('adminbackend'); toggleMobileMenu()">⚙️
+        หลังบ้าน (Admin)</a>
+      <a href="#" onclick="cycleTheme(); toggleMobileMenu()">🎨 เปลี่ยนธีม</a>
+      <a href="#" onclick="handleLogout()">🚪 ออกจากระบบ</a>
+    </div>
+
+
+    <!-- DASHBOARD SECTION -->
+    <section class="section active" id="section-dashboard">
+      <div class="container">
+
+        <!-- Welcome Banner -->
+        <div class="welcome-banner" id="welcome-banner">
+          <div class="welcome-text">
+            <p class="welcome-greeting" id="welcome-greeting">สวัสดี 👋</p>
+            <h2 class="welcome-name" id="welcome-name">นักเรียน</h2>
+            <p class="welcome-room" id="welcome-room-text">ห้อง -</p>
+          </div>
+          <div class="welcome-token-card">
+            <p class="wtc-label">โทเค้นของฉัน</p>
+            <p class="wtc-value" id="my-token-value">0</p>
+            <p class="wtc-sub">🪙 Token</p>
+          </div>
+          <div class="welcome-orb"></div>
+        </div>
+
+        <!-- Top 3 Podium -->
+        <div class="section-header">
+          <h3 class="section-title">🏆 Leaderboard</h3>
+          <span class="section-badge">Top 3</span>
+        </div>
+        <div class="podium-container" id="podium-container">
+          <!-- Generated by JS -->
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-row" id="stats-row">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg,#6C63FF,#3EC6E0)">🏅</div>
+            <div class="stat-card-info">
+              <p class="stat-card-label">อันดับของฉัน</p>
+              <p class="stat-card-value" id="my-rank-display">#-</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg,#FF6B6B,#FF8E53)">🔥</div>
+            <div class="stat-card-info">
+              <p class="stat-card-label">Token สูงสุด</p>
+              <p class="stat-card-value" id="max-token-display">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg,#00C9FF,#92FE9D)">👥</div>
+            <div class="stat-card-info">
+              <p class="stat-card-label">นักเรียนทั้งหมด</p>
+              <p class="stat-card-value" id="total-students-display">0</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background: linear-gradient(135deg,#f7971e,#FFD200)">⭐</div>
+            <div class="stat-card-info">
+              <p class="stat-card-label">เกรดของฉัน</p>
+              <p class="stat-card-value" id="my-grade-display">-</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grade Legend -->
+        <div class="grade-legend">
+          <h4 class="legend-title">🎨 เกณฑ์ระดับโทเค้น</h4>
+          <div class="legend-items">
+            <div class="legend-item diamond"><span class="legend-dot"></span><span>💎 Diamond 500+</span></div>
+            <div class="legend-item platinum"><span class="legend-dot"></span><span>🥇 Platinum 300-499</span></div>
+            <div class="legend-item gold"><span class="legend-dot"></span><span>🟡 Gold 150-299</span></div>
+            <div class="legend-item silver"><span class="legend-dot"></span><span>⚪ Silver 50-149</span></div>
+            <div class="legend-item bronze"><span class="legend-dot"></span><span>🟤 Bronze 1-49</span></div>
+            <div class="legend-item none"><span class="legend-dot"></span><span>⚫ Unranked 0</span></div>
+          </div>
+        </div>
+
+        <!-- Mini Leaderboard (rank 4-10) -->
+        <div class="section-header" style="margin-top:2rem">
+          <h3 class="section-title">📋 อันดับทั้งหมด</h3>
+          <div class="filter-group">
+            <select id="room-filter" class="room-select" onchange="renderLeaderboard()">
+              <option value="">ทุกห้อง</option>
+              <option value="ปวช.2/8">ปวช.2/8</option>
+              <option value="ปวช.2/9">ปวช.2/9</option>
+              <option value="ปวช.2/10">ปวช.2/10</option>
+            </select>
+          </div>
+        </div>
+        <div class="leaderboard-table" id="main-leaderboard">
+          <!-- Generated by JS -->
+        </div>
+
+      </div>
+    </section>
+
+    <!-- LEADERBOARD SECTION (full page) -->
+    <section class="section" id="section-leaderboard">
+      <div class="container">
+        <div class="page-header">
+          <h2 class="page-title">🏆 กระดานอันดับ (Leaderboard)</h2>
+          <p class="page-subtitle">จัดอันดับนักเรียนตามโทเค้นสะสม</p>
+        </div>
+        <div class="filter-bar">
+          <select id="lb-room-filter" class="room-select big" onchange="renderFullLeaderboard()">
+            <option value="">🏫 ทุกห้อง</option>
+            <option value="ปวช.2/8">ปวช.2/8</option>
+            <option value="ปวช.2/9">ปวช.2/9</option>
+            <option value="ปวช.2/10">ปวช.2/10</option>
+          </select>
+          <input type="text" id="lb-search" class="lb-search" placeholder="🔍 ค้นหาชื่อ..."
+            oninput="renderFullLeaderboard()" />
+        </div>
+        <div class="leaderboard-table full" id="full-leaderboard">
+          <!-- Generated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME SECTION 1: PC BUILDER -->
+    <section class="section" id="section-game">
+      <div class="container" style="max-width:1200px;">
+        <div class="page-header" style="text-align:center;">
+          <h2 class="page-title">🎮 เกมประกอบคอมพิวเตอร์</h2>
+          <p class="page-subtitle">จำลองการประกอบคอมพิวเตอร์และลง Windows!</p>
+        </div>
+        <div class="game-wrapper">
+          <iframe src="game.html" class="game-iframe" title="PC Builder Simulator" allowfullscreen></iframe>
+        </div>
+      </div>
+    </section>
+
+    <!-- GAME SECTION 2: CARD MATCHING -->
+    <section class="section" id="section-cardgame">
+      <div class="container" style="max-width:1200px;">
+        <div class="page-header" style="text-align:center;">
+          <h2 class="page-title">🃏 มินิเกมจับคู่</h2>
+          <p class="page-subtitle">จับคู่อุปกรณ์คอมพิวเตอร์เพื่อทบทวนความจำ!</p>
+        </div>
+        <div id="cardgame-root" style="min-height:540px;"></div>
+      </div>
+    </section>
+
+    <script>
+      /* ===== CARD MATCHING GAME ===== */
+      function initCardGame() {
+        const PC_CARDS = [
+          { id: 1, icon: '🖥️', name: 'CPU', desc: 'หน่วยประมวลผลกลาง สมองของคอมพิวเตอร์' },
+          { id: 2, icon: '🟩', name: 'RAM', desc: 'หน่วยความจำชั่วคราว เก็บข้อมูลขณะใช้งาน' },
+          { id: 3, icon: '💾', name: 'HDD', desc: 'ฮาร์ดดิสก์ เก็บข้อมูลถาวรแบบจานหมุน' },
+          { id: 4, icon: '⚡', name: 'SSD', desc: 'Solid State Drive เก็บข้อมูลได้เร็วกว่า HDD' },
+          { id: 5, icon: '🎮', name: 'GPU', desc: 'การ์ดจอ ประมวลผลภาพกราฟิก 3D' },
+          { id: 6, icon: '🔌', name: 'PSU', desc: 'Power Supply จ่ายไฟฟ้าให้ทุกชิ้นส่วน' },
+          { id: 7, icon: '🗂️', name: 'Motherboard', desc: 'เมนบอร์ด แผงวงจรหลักเชื่อมต่ออุปกรณ์ทั้งหมด' },
+          { id: 8, icon: '❄️', name: 'CPU Cooler', desc: 'ระบบระบายความร้อนให้ CPU ไม่ร้อนเกิน' },
+          { id: 9, icon: '🌐', name: 'NIC', desc: 'การ์ดเน็ตเวิร์ก เชื่อมต่ออินเทอร์เน็ต/LAN' },
+          { id: 10, icon: '🔊', name: 'Sound Card', desc: 'การ์ดเสียง ประมวลผลและส่งสัญญาณเสียง' },
+          { id: 11, icon: '📺', name: 'Monitor', desc: 'จอภาพ แสดงผลจากคอมพิวเตอร์ให้ผู้ใช้มองเห็นได้' },
+          { id: 12, icon: '🗄️', name: 'Case', desc: 'ตัวถังคอมพิวเตอร์ โครงสร้างห่อหุ้มและปกป้องอุปกรณ์ภายใน' },
+        ];
+        let deck = [], flipped = [], matched = [], wrong = [], moves = 0, time = 0, started = false, lock = false, timerInterval = null;
+
+        const CMSound = {
+          ctx: null,
+          init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+          play(type) {
+            if (!window.cmSoundEnabled) return;
+            this.init();
+            if (this.ctx.state === 'suspended') this.ctx.resume();
+            const now = this.ctx.currentTime, osc = this.ctx.createOscillator(), gain = this.ctx.createGain();
+            osc.connect(gain); gain.connect(this.ctx.destination);
+            if (type === 'flip') {
+              osc.type = 'sine'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(600, now + 0.05);
+              gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.3, now + 0.02); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+              osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'match') {
+              osc.type = 'triangle'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1);
+              gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.4, now + 0.05); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+              osc.start(now); osc.stop(now + 0.4);
+            } else if (type === 'mismatch') {
+              osc.type = 'square'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+              gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.2, now + 0.05); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+              osc.start(now); osc.stop(now + 0.2);
+            } else if (type === 'win') {
+              [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+                o.type = 'sine'; o.connect(g); g.connect(this.ctx.destination);
+                o.frequency.value = f;
+                g.gain.setValueAtTime(0, now + i * 0.1); g.gain.linearRampToValueAtTime(0.3, now + i * 0.1 + 0.05); g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.8);
+                o.start(now + i * 0.1); o.stop(now + i * 0.1 + 0.8);
+              });
+            }
+          }
+        };
+        if (typeof window.cmSoundEnabled === 'undefined') window.cmSoundEnabled = true;
+        window.toggleCMSound = function () {
+          window.cmSoundEnabled = !window.cmSoundEnabled;
+          const btn = document.getElementById('cm-sound-btn');
+          if (btn) btn.innerHTML = window.cmSoundEnabled ? '🔊 เปิดเสียง' : '🔇 ปิดเสียง';
+        };
+
+        function shuffle(arr) { return [...arr].sort(() => Math.random() - .5); }
+        function buildDeck() {
+          const ic = PC_CARDS.map(c => ({ uid: 'i' + c.id, pairId: c.id, type: 'icon', content: c.icon, label: c.name }));
+          const dc = PC_CARDS.map(c => ({ uid: 'd' + c.id, pairId: c.id, type: 'desc', content: c.desc, label: c.name }));
+          return shuffle([...ic, ...dc]);
+        }
+        function fmtTime(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+        function startTimer() { if (timerInterval) return; timerInterval = setInterval(() => { time++; document.getElementById('cm-time').textContent = fmtTime(time); }, 1000); }
+        function stopTimer() { clearInterval(timerInterval); timerInterval = null; }
+
+        function render() {
+          const cSettings = (typeof loadRewardSettings === 'function') ? loadRewardSettings().cardGame : { thresh3: 18, thresh2: 26 };
+          const stars = moves <= cSettings.thresh3 ? 3 : moves <= cSettings.thresh2 ? 2 : 1;
+          const root = document.getElementById('cardgame-root');
+          root.innerHTML = `
+            <div style="background:linear-gradient(135deg,#0f1729,#1a2540);border-radius:20px;padding:20px;min-height:520px;font-family:'Prompt',sans-serif;">
+              <!-- Header -->
+              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:22px;">🃏</span>
+                  <span style="color:white;font-weight:700;font-size:17px;">PC Component Matching</span>
+                  <span style="background:rgba(255,255,255,.12);color:#c7d2fe;font-size:11px;padding:2px 10px;border-radius:20px;">จับคู่อุปกรณ์คอม</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:16px;">
+                  <button id="cm-sound-btn" onclick="toggleCMSound()" style="background:none;border:none;color:#a5b4fc;cursor:pointer;font-size:13px;font-family:inherit;padding:0;">${window.cmSoundEnabled ? '🔊 เปิดเสียง' : '🔇 ปิดเสียง'}</button>
+                  <span style="color:#a5b4fc;font-size:13px;" id="cm-time">00:00</span>
+                  <span style="color:#a5b4fc;font-size:13px;">🎯 <span id="cm-moves">0</span> ครั้ง</span>
+                  <button onclick="restartCardGame()" style="background:rgba(255,255,255,.1);border:none;color:white;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;">↺ เริ่มใหม่</button>
+                </div>
+              </div>
+              <!-- Progress -->
+              <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                <div style="flex:1;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;">
+                  <div id="cm-progress-bar" style="height:100%;width:${(matched.length / PC_CARDS.length * 100)}%;background:linear-gradient(90deg,#4ade80,#22d3ee);border-radius:3px;transition:width .4s;"></div>
+                </div>
+                <span style="color:#64748b;font-size:12px;white-space:nowrap;">${matched.length}/${PC_CARDS.length} คู่</span>
+              </div>
+              <!-- Legend -->
+              <div style="display:flex;gap:18px;margin-bottom:14px;">
+                <span style="font-size:11px;color:#818cf8;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:linear-gradient(135deg,#4f46e5,#7c3aed);border-radius:2px;display:inline-block;"></span>การ์ด Icon</span>
+                <span style="font-size:11px;color:#34d399;display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;background:linear-gradient(135deg,#065f46,#047857);border-radius:2px;display:inline-block;"></span>การ์ดคำอธิบาย</span>
+              </div>
+              <!-- Grid -->
+              <div id="cm-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;"></div>
+            </div>`;
+          renderGrid();
+          document.getElementById('cm-moves').textContent = moves;
+        }
+
+        function renderGrid() {
+          const grid = document.getElementById('cm-grid');
+          if (!grid) return;
+          grid.innerHTML = deck.map(card => {
+            const isFlipped = flipped.find(f => f.uid === card.uid) || matched.includes(card.pairId);
+            const isMch = matched.includes(card.pairId);
+            const isWrg = wrong.includes(card.uid);
+            const isIcon = card.type === 'icon';
+            const front = isIcon
+              ? `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:100%;padding:6px;">
+                   <span style="font-size:32px;line-height:1;">${card.content}</span>
+                   <span style="color:#c7d2fe;font-size:10px;font-weight:700;text-align:center;">${card.label}</span>
+                   ${isMch ? '<span style="position:absolute;top:4px;right:6px;font-size:11px;color:#4ade80;">✓</span>' : ''}
+                 </div>`
+              : `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:100%;padding:6px;">
+                   <span style="color:#6ee7b7;font-size:10px;font-weight:700;text-align:center;">${card.label}</span>
+                   <span style="color:#a7f3d0;font-size:9px;text-align:center;line-height:1.4;">${card.content}</span>
+                   ${isMch ? '<span style="position:absolute;top:4px;right:6px;font-size:11px;color:#4ade80;">✓</span>' : ''}
+                 </div>`;
+            const faceColor = isMch ? 'linear-gradient(135deg,rgba(6,78,59,.9),rgba(4,120,87,.8))'
+              : isWrg ? 'linear-gradient(135deg,rgba(127,29,29,.9),rgba(153,27,27,.8))'
+                : isIcon ? 'linear-gradient(135deg,rgba(49,46,129,.9),rgba(67,56,202,.8))'
+                  : 'linear-gradient(135deg,rgba(6,78,59,.7),rgba(4,120,87,.6))';
+            const border = isMch ? '2px solid #4ade80' : isWrg ? '2px solid #f87171' : isIcon ? '2px solid rgba(99,102,241,.6)' : '2px solid rgba(52,211,153,.5)';
+            return `<div onclick="flipCard('${card.uid}')"
+              style="height:${isIcon ? '108' : '100'}px;border-radius:12px;cursor:${isMch ? 'default' : 'pointer'};perspective:600px;transform:${isWrg ? 'scale(.93)' : 'scale(1)'};transition:transform .15s;">
+              <div style="width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .42s cubic-bezier(.4,0,.2,1);transform:${isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'};">
+                <div style="position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;background:linear-gradient(135deg,#1e3a5f,#0f2748);border:2px solid rgba(99,102,241,.3);display:flex;align-items:center;justify-content:center;">
+                  <span style="font-size:26px;opacity:.5;">❓</span>
+                </div>
+                <div style="position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateY(180deg);border-radius:12px;border:${border};background:${faceColor};overflow:hidden;box-shadow:${isMch ? '0 0 14px rgba(74,222,128,.3)' : 'none'};">
+                  ${front}
+                </div>
+              </div>
+            </div>`;
+          }).join('');
+        }
+
+        window.flipCard = function (uid) {
+          if (lock) return;
+          const card = deck.find(c => c.uid === uid);
+          if (!card || matched.includes(card.pairId) || flipped.find(f => f.uid === uid)) return;
+          if (!started) { started = true; startTimer(); }
+
+          CMSound.play('flip');
+          flipped = [...flipped, card];
+          renderGrid();
+
+          if (flipped.length === 2) {
+            moves++;
+            document.getElementById('cm-moves').textContent = moves;
+            lock = true;
+            const [a, b] = flipped;
+            if (a.pairId === b.pairId && a.uid !== b.uid) {
+              CMSound.play('match');
+              matched = [...matched, a.pairId];
+              document.getElementById('cm-progress-bar').style.width = (matched.length / PC_CARDS.length * 100) + '%';
+              flipped = []; lock = false;
+              renderGrid();
+              if (matched.length === PC_CARDS.length) {
+                stopTimer();
+                CMSound.play('win');
+                setTimeout(showWin, 600);
+              }
+            } else {
+              CMSound.play('mismatch');
+              wrong = [a.uid, b.uid];
+              renderGrid();
+              setTimeout(() => { flipped = []; wrong = []; lock = false; renderGrid(); }, 900);
+            }
+          }
+        };
+
+        function showWin() {
+          const cSettings = (typeof loadRewardSettings === 'function') ? loadRewardSettings().cardGame : { thresh3: 18, thresh2: 26, star1Token: 5, star2Token: 10, star3Token: 15, firstBonus: 0 };
+          const stars = moves <= cSettings.thresh3 ? 3 : moves <= cSettings.thresh2 ? 2 : 1;
+          const starTokenMap = { 1: cSettings.star1Token || 5, 2: cSettings.star2Token || 10, 3: cSettings.star3Token || 15 };
+          const tokensEarned = starTokenMap[stars] || stars * 5;
+
+          window.postMessage({ type: 'ADD_TOKEN', amount: tokensEarned, reason: 'มินิเกมจับคู่อุปกรณ์', icon: '🃏' }, '*');
+
+          const root = document.getElementById('cardgame-root');
+          root.innerHTML += `
+            <div id="cm-win" style="position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:9999;">
+              <div style="background:linear-gradient(135deg,#1e3a5f,#312e81);border:1px solid rgba(139,92,246,.5);border-radius:20px;padding:40px 48px;text-align:center;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.6);">
+                <div style="font-size:60px;margin-bottom:10px;">🏆</div>
+                <div style="color:#fbbf24;font-size:22px;font-weight:800;margin-bottom:4px;">จับคู่สำเร็จ!</div>
+                <div style="color:#94a3b8;font-size:13px;margin-bottom:20px;">คุณได้รับ <strong style="color:#fbbf24">${tokensEarned} Token</strong> จากระดับ ${stars} ดาว</div>
+                <div style="display:flex;justify-content:center;gap:20px;margin-bottom:22px;">
+                  <div style="text-align:center;"><div style="color:#a5b4fc;font-size:26px;font-weight:700;">${fmtTime(time)}</div><div style="color:#64748b;font-size:11px;">เวลา</div></div>
+                  <div style="width:1px;background:rgba(255,255,255,.1);"></div>
+                  <div style="text-align:center;"><div style="color:#a5b4fc;font-size:26px;font-weight:700;">${moves}</div><div style="color:#64748b;font-size:11px;">ครั้ง</div></div>
+                  <div style="width:1px;background:rgba(255,255,255,.1);"></div>
+                  <div style="text-align:center;"><div style="font-size:26px;">${'⭐'.repeat(stars)}</div><div style="color:#64748b;font-size:11px;">ดาว</div></div>
+                </div>
+                <button onclick="restartCardGame()" style="width:100%;padding:13px;background:linear-gradient(90deg,#4f46e5,#7c3aed);border:none;border-radius:12px;color:white;font-weight:700;font-size:15px;cursor:pointer;font-family:'Prompt',sans-serif;box-shadow:0 4px 20px rgba(99,102,241,.5);">
+                  🔄 เล่นอีกครั้ง
+                </button>
+              </div>
+            </div>`;
+        }
+
+        window.restartCardGame = function () {
+          const win = document.getElementById('cm-win');
+          if (win) win.remove();
+          deck = []; flipped = []; matched = []; wrong = []; moves = 0; time = 0; started = false; lock = false;
+          stopTimer();
+          deck = buildDeck();
+          render();
+        };
+
+        deck = buildDeck();
+        render();
+      }
+    </script>
+
+    <!-- ===== ASSIGNMENT SCORE SECTION ===== -->
+    <section class="section" id="section-assignment">
+      <div class="container">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">🗂️ เช็คคะแนนงาน</h2>
+            <p class="page-subtitle">ตรวจสอบคะแนนงานที่ได้รับมอบหมาย</p>
+          </div>
+        </div>
+
+        <div id="student-assignment-content">
+          <div class="chat-loading" style="padding:40px;text-align:center" id="assign-loading">
+            <div class="chat-spinner"></div>
+            <p>กำลังดึงข้อมูล...</p>
+          </div>
+          <div id="assign-freeze-msg" class="hidden"
+            style="text-align:center;padding:40px;background:var(--card-bg);border-radius:12px;box-shadow:var(--shadow-md)">
+            <h3 style="color:var(--warning);font-size:1.5rem">🔒 คะแนนยังไม่เปิดเผยแพร่</h3>
+            <p style="color:var(--text-muted);margin-top:10px">คุณครูจะเปิดเผยคะแนนเร็วๆ นี้ กรุณารอประกาศ</p>
+          </div>
+          <div id="assign-scores-grid" class="hidden"
+            style="margin-top:20px;display:flex;flex-direction:column;gap:12px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== ADMIN BACKEND SECTION ===== -->
+    <section class="section" id="section-adminbackend">
+      <div class="container">
+        <div class="page-header admin-backend-header">
+          <div class="admin-header-left">
+            <div class="admin-badge-icon">⚙️</div>
+            <div>
+              <h2 class="page-title">ระบบหลังบ้าน</h2>
+              <p class="page-subtitle">จัดการโทเค้นและข้อมูลนักเรียนทั้งหมด</p>
+            </div>
+          </div>
+          <div class="admin-header-stats" id="admin-header-stats">
+            <div class="admin-stat-pill"><span id="ab-total">0</span><span>นักเรียน</span></div>
+            <div class="admin-stat-pill pill-gold"><span id="ab-total-tokens">0</span><span>Token รวม</span></div>
+          </div>
+        </div>
+
+        <!-- Admin Main Menu Dropdown -->
+        <div class="admin-section-selector" style="margin-bottom: 20px;">
+          <select id="admin-main-menu" class="aq-input"
+            style="width: 100%; font-size: 1.1rem; padding: 12px; border-radius: 12px; background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); cursor: pointer;"
+            onchange="switchAdminPanel(this.value)">
+            <option value="student-token">👤 1. จัดการโทเค้นและนักเรียน</option>
+            <option value="shop">🛒 2. จัดการร้านแลกของรางวัล</option>
+            <option value="reward-setting">🎁 3. ตั้งค่ารางวัล Token</option>
+            <option value="quiz">📝 4. จัดการแบบทดสอบ (Quiz)</option>
+            <option value="assignment">🗂️ 5. จัดการคะแนนงาน</option>
+          </select>
+        </div>
+
+        <!-- ===== 1. ADMIN STUDENT & TOKEN MANAGEMENT ===== -->
+        <div id="admin-panel-student-token" class="admin-main-panel active">
+
+          <!-- Quick Token Actions -->
+          <div class="admin-quick-panel">
+            <h4 class="admin-section-label">⚡ จัดการโทเค้นรายคน</h4>
+            <div class="admin-quick-form">
+              <div class="aqf-select-wrap">
+                <select id="aq-student" class="aq-input" onchange="adminFillCurrentToken()">
+                  <option value="">-- เลือกนักเรียน --</option>
+                </select>
+              </div>
+              <input type="number" id="aq-amount" class="aq-input aq-amount" placeholder="จำนวน Token" min="0" />
+              <div class="aqf-actions">
+                <button class="aqf-btn aqf-set" onclick="adminQuickSet()">✅ ตั้งค่า</button>
+                <button class="aqf-btn aqf-add" onclick="adminQuickAdd()">➕ เพิ่ม</button>
+                <button class="aqf-btn aqf-sub" onclick="adminQuickSub()">➖ ลด</button>
+                <button class="aqf-btn aqf-reset" onclick="adminQuickReset()">🔄 รีเซ็ต</button>
+              </div>
+            </div>
+            <div class="aq-current-info" id="aq-current-info"></div>
+          </div>
+
+          <!-- Bulk Actions -->
+          <div class="admin-bulk-panel">
+            <h4 class="admin-section-label">🔧 จัดการกลุ่ม</h4>
+            <div class="admin-bulk-row">
+              <select id="bulk-room" class="aq-input" style="flex:1;max-width:200px">
+                <option value="">ทุกห้อง</option>
+                <option value="ปวช.2/5">ปวช.2/5</option>
+                <option value="ปวช.2/6">ปวช.2/6</option>
+                <option value="ปวช.2/7">ปวช.2/7</option>
+              </select>
+              <input type="number" id="bulk-amount" class="aq-input aq-amount" placeholder="จำนวน Token" min="0"
+                style="max-width:160px" />
+              <button class="aqf-btn aqf-add" onclick="adminBulkAdd()">➕ เพิ่มทุกคนในห้อง</button>
+              <button class="aqf-btn aqf-reset" onclick="adminBulkReset()">🔄 รีเซ็ตทั้งห้อง</button>
+            </div>
+          </div>
+
+          <!-- Search & Filter for table -->
+          <div class="admin-table-header">
+            <h4 class="admin-section-label">📋 รายชื่อนักเรียนทั้งหมด</h4>
+            <div class="admin-table-filters">
+              <select id="ab-room-filter" class="aq-input" onchange="renderAdminTable()">
+                <option value="">ทุกห้อง</option>
+                <option value="ปวช.2/5">ปวช.2/5</option>
+                <option value="ปวช.2/6">ปวช.2/6</option>
+                <option value="ปวช.2/7">ปวช.2/7</option>
+              </select>
+              <input type="text" id="ab-search" class="lb-search" placeholder="🔍 ค้นหาชื่อ..."
+                oninput="renderAdminTable()" style="max-width:220px" />
+              <select id="ab-sort" class="aq-input" onchange="renderAdminTable()">
+                <option value="tokens-desc">Token สูง → ต่ำ</option>
+                <option value="tokens-asc">Token ต่ำ → สูง</option>
+                <option value="name">ชื่อ A-Z</option>
+                <option value="room">ห้องเรียน</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Admin Student Table -->
+          <div class="admin-table-wrapper">
+            <div class="admin-table" id="admin-student-table">
+              <!-- Generated by JS -->
+            </div>
+          </div>
+
+          <!-- Export/Danger Zone -->
+          <div class="admin-danger-zone">
+            <h4 class="admin-section-label" style="color:var(--danger)">⚠️ Danger Zone</h4>
+            <div class="admin-bulk-row">
+              <button class="aqf-btn aqf-reset" onclick="adminResetAllTokens()"
+                style="background:linear-gradient(135deg,#FF5252,#D32F2F)">💣 รีเซ็ตโทเค้นทุกคน</button>
+              <button class="aqf-btn" onclick="adminExportCSV()"
+                style="background:linear-gradient(135deg,#388E3C,#00C853)">📥 Export CSV</button>
+            </div>
+          </div>
+        </div> <!-- End of admin-panel-student-token -->
+
+        <!-- ===== 2. ADMIN SHOP MANAGEMENT ===== -->
+        <div class="admin-shop-panel admin-main-panel" id="admin-panel-shop" style="display:none;">
+          <div class="admin-shop-header">
+            <div>
+              <h4 class="admin-section-label">🛒 จัดการร้านแลกของรางวัล</h4>
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">ตรวจสอบคำขอแลก และจัดการสินค้าในร้าน
+              </p>
+            </div>
+            <div class="admin-shop-stats" id="admin-shop-stats">
+              <div class="admin-stat-pill" style="background:rgba(255,215,64,0.1);border-color:rgba(255,215,64,0.2)">
+                <span id="ab-pending-count" style="color:#FFD740">0</span><span>รอยืนยัน</span>
+              </div>
+              <div class="admin-stat-pill" style="background:rgba(0,230,118,0.1);border-color:rgba(0,230,118,0.2)">
+                <span id="ab-used-count" style="color:#00E676">0</span><span>อนุมัติแล้ว</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-tabs -->
+          <div class="admin-shop-tabs">
+            <button class="ast-btn active" id="ast-btn-redeem" onclick="switchAdminShopTab('redeem')">📋
+              คำขอแลกของรางวัล</button>
+            <button class="ast-btn" id="ast-btn-items" onclick="switchAdminShopTab('items')">🏪 จัดการสินค้า</button>
+          </div>
+
+          <!-- Tab: Redemption Requests -->
+          <div id="admin-shop-tab-redeem">
+            <div class="admin-redeem-filters">
+              <select id="ar-status-filter" class="aq-input" onchange="renderAdminRedeems()">
+                <option value="">ทุกสถานะ</option>
+                <option value="pending">⏳ รอการยืนยัน</option>
+                <option value="used">✅ อนุมัติแล้ว</option>
+                <option value="rejected">❌ ปฏิเสธ</option>
+              </select>
+              <input type="text" id="ar-search" class="lb-search" placeholder="🔍 ค้นหาชื่อนักเรียน..."
+                oninput="renderAdminRedeems()" style="max-width:220px" />
+            </div>
+            <div id="admin-redeem-list"><!-- JS --></div>
+          </div>
+
+          <!-- Tab: Manage Shop Items -->
+          <div id="admin-shop-tab-items" style="display:none">
+            <div class="admin-items-list" id="admin-items-list"><!-- JS --></div>
+            <button class="admin-add-item-btn" onclick="openAddItemModal()">➕ เพิ่มสินค้าใหม่</button>
+          </div>
+        </div>
+
+        <!-- ===== 3. ADMIN REWARD SETTINGS ===== -->
+        <div class="admin-reward-panel admin-main-panel" id="admin-panel-reward-setting" style="display:none;">
+          <div class="admin-shop-header">
+            <div>
+              <h4 class="admin-section-label">🎁 ตั้งค่ารางวัล Token</h4>
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">กำหนดจำนวน Token
+                ที่นักเรียนได้รับจากการเล่น Quiz และมินิเกม</p>
+            </div>
+            <button class="aqf-btn aqf-set" onclick="saveRewardSettings()" style="min-width:120px;height:38px">
+              💾 บันทึกการตั้งค่า
+            </button>
+          </div>
+
+          <!-- Reward Sub-tabs -->
+          <div class="admin-shop-tabs">
+            <button class="ast-btn active" id="art-btn-quiz" onclick="switchAdminRewardTab('quiz')">📝 Quiz</button>
+            <button class="ast-btn" id="art-btn-cardgame" onclick="switchAdminRewardTab('cardgame')">🃏
+              เกมจับคู่</button>
+            <button class="ast-btn" id="art-btn-pcgame" onclick="switchAdminRewardTab('pcgame')">🎮
+              เกมประกอบคอม</button>
+          </div>
+
+          <!-- Tab: Quiz Rewards -->
+          <div id="admin-reward-tab-quiz">
+            <div class="reward-settings-grid">
+              <div class="reward-setting-card">
+                <div class="rsc-header">
+                  <span class="rsc-icon">🪙</span>
+                  <div>
+                    <div class="rsc-title">Token ต่อข้อที่ตอบถูก (Default)</div>
+                    <div class="rsc-desc">ใช้เมื่อคำถามไม่ได้กำหนด Token เอง</div>
+                  </div>
+                </div>
+                <div class="rsc-input-row">
+                  <input type="number" id="rs-quiz-default-token" class="aq-input rsc-input" value="10" min="0"
+                    max="1000" />
+                  <span class="rsc-unit">Token / ข้อ</span>
+                </div>
+              </div>
+
+              <div class="reward-setting-card">
+                <div class="rsc-header">
+                  <span class="rsc-icon">🎉</span>
+                  <div>
+                    <div class="rsc-title">โบนัสเล่น Quiz ครั้งแรก</div>
+                    <div class="rsc-desc">Token พิเศษสำหรับการทำ Quiz หมวดหมู่ใดๆ ครั้งแรก</div>
+                  </div>
+                </div>
+                <div class="rsc-input-row">
+                  <input type="number" id="rs-quiz-first-bonus" class="aq-input rsc-input" value="5" min="0"
+                    max="500" />
+                  <span class="rsc-unit">Token (โบนัส)</span>
+                </div>
+              </div>
+
+              <div class="reward-setting-card">
+                <div class="rsc-header">
+                  <span class="rsc-icon">🔄</span>
+                  <div>
+                    <div class="rsc-title">Token เมื่อทำ Quiz ซ้ำ</div>
+                    <div class="rsc-desc">หากตอบถูกข้อที่เคยทำไปแล้ว จะได้กี่ % ของ Token ปกติ</div>
+                  </div>
+                </div>
+                <div class="rsc-input-row">
+                  <input type="number" id="rs-quiz-retry-pct" class="aq-input rsc-input" value="0" min="0" max="100" />
+                  <span class="rsc-unit">% ของ Token ปกติ</span>
+                </div>
+              </div>
+
+              <div class="reward-setting-card rsc-full">
+                <div class="rsc-header">
+                  <span class="rsc-icon">🗑️</span>
+                  <div>
+                    <div class="rsc-title">รีเซ็ตประวัติ Quiz ของนักเรียน</div>
+                    <div class="rsc-desc">ล้างบันทึกว่าข้อไหนเคยทำไปแล้ว เพื่อให้นักเรียนทำซ้ำได้รับ Token ใหม่</div>
+                  </div>
+                </div>
+                <div class="admin-bulk-row" style="margin-top:12px;flex-wrap:wrap;gap:10px">
+                  <select id="rs-quiz-reset-student" class="aq-input" style="flex:1;min-width:180px">
+                    <option value="">-- เลือกนักเรียน (ว่าง = ทุกคน) --</option>
+                  </select>
+                  <button class="aqf-btn aqf-reset" onclick="adminResetQuizProgress()" style="white-space:nowrap">
+                    🔄 รีเซ็ตประวัติ Quiz
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Card Game Rewards -->
+          <div id="admin-reward-tab-cardgame" style="display:none">
+            <div class="reward-settings-grid">
+              <div class="reward-setting-card">
+                <div class="rsc-header">
+                  <span class="rsc-icon">⭐</span>
+                  <div>
+                    <div class="rsc-title">Token เมื่อได้ 1 ดาว</div>
+                    <div class="rsc-desc">เกินกว่า 26 ครั้ง (หลายครั้งมาก)</div>
+                  </div>
+                </div>
+                <div class="rsc-input-row">
+                  <input type="number" id="rs-card-star1" class="aq-input rsc-input" value="5" min="0" max="1000" />
+                  <span class="rsc-unit">Token</span>
+                </div>
+              </div>
+
+              <div class="reward-setting-card">
+                <div class="rsc-header">
+                  <span class="rsc-icon">⭐⭐</span>
+                  <div>
+                    <div class="rsc-title">Token เมื่อได้ 2 ดาว</div>
+                    <div class="rsc-desc">19-26 ครั้ง (ดีพอสมควร)</div>
+                  </div>
+                </div>
+                <div class="rsc-input-row">
+                  <input type="number" id="rs-card-star2" class="aq-input rsc-input" value="10" min="0" max="1000" />
+                  <span class="rsc-unit">Token</span>
+                </div>
+              </div>
+
+              <div class="reward-setting-card">
+                <div class="rsc-header">
+                  <span class="rsc-icon">⭐⭐⭐</span>
+                  <div>
+                    <div class="rsc-title">Token เมื่อได้ 3 ดาว</div>
+                    <div class="rsc-desc">≤ 18 ครั้ง (ยอดเยี่ยม!)</div>
+                  </div>
+                </div>
+                <div class="rsc-input-row">
+                  <input type="number" id="rs-card-star3" class="aq-input rsc-input" value="15" min="0" max="1000" />
+                  <span class="rsc-unit">Token</span>
+                </div>
+              </div>
+
+              <div class="reward-setting-card">
+                <div class="rsc-header">
+                  <span class="rsc-icon">🎉</span>
+                  <div>
+                    <div class="rsc-title">โบนัสเล่นครั้งแรก</div>
+                    <div class="rsc-desc">Token พิเศษสำหรับการเล่นเกมจับคู่ครั้งแรกเท่านั้น</div>
+                  </div>
+                </div>
+                <div class="rsc-input-row">
+                  <input type="number" id="rs-card-first-bonus" class="aq-input rsc-input" value="0" min="0"
+                    max="500" />
+                  <span class="rsc-unit">Token (โบนัส)</span>
+                </div>
+              </div>
+
+              <div class="reward-setting-card rsc-full">
+                <div class="rsc-header">
+                  <span class="rsc-icon">🔢</span>
+                  <div>
+                    <div class="rsc-title">เกณฑ์จำนวนครั้งสำหรับดาว</div>
+                    <div class="rsc-desc">ตั้งค่าเส้นแบ่งจำนวนครั้งที่พลิกไพ่ สำหรับ 3 ดาว / 2 ดาว</div>
+                  </div>
+                </div>
+                <div class="admin-bulk-row" style="margin-top:12px;gap:16px;flex-wrap:wrap;align-items:center">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">3 ดาว ≤</span>
+                    <input type="number" id="rs-card-thresh3" class="aq-input rsc-input" value="18" min="1" max="100" />
+                    <span style="color:var(--text-muted);font-size:0.85rem">ครั้ง</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="color:var(--text-muted);font-size:0.85rem;white-space:nowrap">2 ดาว ≤</span>
+                    <input type="number" id="rs-card-thresh2" class="aq-input rsc-input" value="26" min="1" max="200" />
+                    <span style="color:var(--text-muted);font-size:0.85rem">ครั้ง</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: PC Builder Game Rewards -->
+          <div id="admin-reward-tab-pcgame" style="display:none">
+            <div class="reward-settings-grid">
+              <div class="reward-setting-card rsc-full">
+                <div class="rsc-header">
+                  <span class="rsc-icon">🎮</span>
+                  <div>
+                    <div class="rsc-title">เกมประกอบคอมพิวเตอร์ (iframe)</div>
+                    <div class="rsc-desc">เกมนี้ส่งรางวัล Token ผ่านระบบ postMessage</div>
+                  </div>
+                </div>
+                <div
+                  style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:12px;padding:14px 16px;margin-top:12px;">
+                  <p style="color:var(--text-muted);font-size:0.85rem;margin:0 0 10px 0">⚙️ ระบบรับ Token จาก game.html
+                    ผ่าน <code>postMessage</code> ปัจจุบันการตั้งค่าถูกกำหนดใน game.html โดยตรง</p>
+                  <div class="admin-bulk-row" style="flex-wrap:wrap;gap:10px">
+                    <div style="display:flex;align-items:center;gap:10px">
+                      <label style="color:var(--text-light);font-size:0.9rem">รับ Token จากเกมนี้:</label>
+                      <label class="rs-toggle-wrap">
+                        <input type="checkbox" id="rs-pcgame-enabled" checked onchange="savePCGameToggle(this)" />
+                        <span class="rs-toggle-slider"></span>
+                      </label>
+                      <span id="rs-pcgame-status" style="color:var(--success);font-size:0.85rem">✅ เปิดใช้งาน</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="reward-setting-card rsc-full">
+                <div class="rsc-header">
+                  <span class="rsc-icon">📊</span>
+                  <div>
+                    <div class="rsc-title">Token ที่นักเรียนได้รับล่าสุดจากมินิเกม</div>
+                    <div class="rsc-desc">ประวัติย่อการได้รับ Token 10 รายการล่าสุด</div>
+                  </div>
+                </div>
+                <div id="rs-token-log" style="margin-top:12px;max-height:260px;overflow-y:auto">
+                  <div style="text-align:center;padding:1rem;color:var(--text-muted)">กำลังโหลด...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 4. ADMIN QUIZ MANAGEMENT ===== -->
+        <div class="admin-quiz-panel admin-main-panel" id="admin-panel-quiz" style="display:none;">
+          <div class="admin-shop-header">
+            <div>
+              <h4 class="admin-section-label">📝 จัดการแบบทดสอบ (Quiz)</h4>
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">เพิ่ม แก้ไข ลบ คำถาม
+                และจัดหมวดหมู่แบบทดสอบ</p>
+            </div>
+            <div class="admin-shop-stats">
+              <div class="admin-stat-pill" style="background:rgba(108,99,255,0.1);border-color:rgba(108,99,255,0.2)">
+                <span id="ab-quiz-count" style="color:#9B95FF">0</span><span>คำถาม</span>
+              </div>
+              <div class="admin-stat-pill" style="background:rgba(62,198,224,0.1);border-color:rgba(62,198,224,0.2)">
+                <span id="ab-quiz-cat-count" style="color:#3EC6E0">0</span><span>หมวดหมู่</span>
+              </div>
+            </div>
+          </div>
+          <!-- Quiz Sub-tabs -->
+          <div class="admin-shop-tabs">
+            <button class="ast-btn active" id="aqt-btn-questions" onclick="switchAdminQuizTab('questions')">❓
+              คำถามทั้งหมด</button>
+            <button class="ast-btn" id="aqt-btn-categories" onclick="switchAdminQuizTab('categories')">🗂️
+              หมวดหมู่</button>
+          </div>
+          <!-- Tab: All Questions -->
+          <div id="admin-quiz-tab-questions">
+            <div class="admin-quiz-filter-bar">
+              <select id="aq-cat-filter" class="aq-input" onchange="renderAdminQuizList()" style="min-width:160px">
+                <option value="">ทุกหมวดหมู่</option>
+              </select>
+              <input type="text" id="aq-q-search" class="lb-search" placeholder="🔍 ค้นหาคำถาม..."
+                oninput="renderAdminQuizList()" style="max-width:240px" />
+              <button class="admin-add-item-btn" onclick="openQuizQuestionModal()" style="margin:0">➕
+                เพิ่มคำถาม</button>
+            </div>
+            <div id="admin-quiz-list"><!-- JS --></div>
+          </div>
+          <!-- Tab: Categories -->
+          <div id="admin-quiz-tab-categories" style="display:none">
+            <div class="admin-quiz-filter-bar">
+              <button class="admin-add-item-btn" onclick="openQuizCategoryModal()" style="margin:0">➕
+                เพิ่มหมวดหมู่</button>
+            </div>
+            <div id="admin-quiz-cat-list"><!-- JS --></div>
+          </div>
+        </div>
+
+        <!-- ===== 5. ADMIN ASSIGNMENT MANAGEMENT ===== -->
+        <div class="admin-assignment-panel admin-main-panel" id="admin-panel-assignment"
+          style="margin-top:20px;background:var(--card-bg);border-radius:12px;padding:24px;border:1px solid var(--border); display:none;">
+          <div class="admin-shop-header"
+            style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:15px">
+            <div>
+              <h4 class="admin-section-label">🗂️ จัดการคะแนนงาน</h4>
+              <p style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">เพิ่ม/ลบ หัวข้องาน, กรอกคะแนน
+                และเปิด-ปิดการเผยแพร่คะแนน</p>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <button class="aqf-btn" id="btn-publish-assignment" onclick="togglePublishAssignment()"
+                style="background:var(--warning);color:#fff">
+                ⏳ กำลังโหลดสถานะ...
+              </button>
+              <button class="admin-add-item-btn" onclick="openAssignmentColumnModal()" style="margin:0">➕
+                เพิ่มหัวข้องาน</button>
+              <button class="admin-add-item-btn" onclick="exportAssignmentToExcel()"
+                style="margin:0;background:var(--success);border-color:var(--success);">📊
+                Export Excel</button>
+            </div>
+          </div>
+
+          <div style="margin-top:16px; display:flex; gap:10px; align-items:center;">
+            <span style="font-size:0.9rem;font-weight:600;">เลือกลงคะแนนของห้อง: </span>
+            <select id="admin-assign-room-filter" class="aq-input" onchange="renderAdminAssignmentTable()"
+              style="max-width:200px">
+              <option value="">ทุกห้อง</option>
+              <option value="ปวช.2/8">ปวช.2/8</option>
+              <option value="ปวช.2/9">ปวช.2/9</option>
+              <option value="ปวช.2/10">ปวช.2/10</option>
+            </select>
+          </div>
+
+          <div style="overflow-x:auto; margin-top:16px;">
+            <table class="assignment-data-table" id="admin-assignment-table" style="width:100%;min-width:600px">
+              <thead>
+                <tr id="admin-assignment-thead-row">
+                  <th style="text-align:left">ชื่อนักเรียน</th>
+                  <th style="width:100px;text-align:center">ห้อง</th>
+                  <!-- JS Generates Topic Columns here -->
+                </tr>
+              </thead>
+              <tbody id="admin-assignment-tbody">
+                <!-- JS Generates Rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+    <!-- ===== CHAT COMMUNITY SECTION ===== -->
+    <section class="section" id="section-chat">
+      <div class="container">
+        <div class="page-header">
+          <div>
+            <h2 class="page-title">💬 Community Chat</h2>
+            <p class="page-subtitle">พูดคุยแลกเปลี่ยนความเห็นกับเพื่อนๆ แบบ Real-time</p>
+          </div>
+          <div class="chat-header-right">
+            <div class="chat-online-badge" id="chat-online-badge">
+              <span class="chat-online-dot"></span>
+              <span id="chat-online-count">0</span> ออนไลน์
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-layout">
+          <!-- Sidebar: rooms & online users -->
+          <div class="chat-sidebar">
+            <div class="chat-sidebar-section">
+              <h4 class="chat-sidebar-title">📢 ห้องสนทนา</h4>
+              <div class="chat-room-list" id="chat-room-list">
+                <button class="chat-room-btn active" id="room-btn-general" onclick="switchChatRoom('general')">
+                  <span class="crb-icon">#</span>
+                  <span class="crb-name">ทั่วไป</span>
+                  <span class="crb-badge hidden" id="room-badge-general">0</span>
+                </button>
+                <button class="chat-room-btn" id="room-btn-study" onclick="switchChatRoom('study')">
+                  <span class="crb-icon">📚</span>
+                  <span class="crb-name">การเรียน</span>
+                  <span class="crb-badge hidden" id="room-badge-study">0</span>
+                </button>
+                <button class="chat-room-btn" id="room-btn-token" onclick="switchChatRoom('token')">
+                  <span class="crb-icon">🪙</span>
+                  <span class="crb-name">Token & Shop</span>
+                  <span class="crb-badge hidden" id="room-badge-token">0</span>
+                </button>
+                <button class="chat-room-btn" id="room-btn-game" onclick="switchChatRoom('game')">
+                  <span class="crb-icon">🎮</span>
+                  <span class="crb-name">เกม</span>
+                  <span class="crb-badge hidden" id="room-badge-game">0</span>
+                </button>
+              </div>
+            </div>
+            <div class="chat-sidebar-section">
+              <h4 class="chat-sidebar-title">👥 ออนไลน์</h4>
+              <div class="chat-online-list" id="chat-online-list"><!-- JS --></div>
+            </div>
+          </div>
+
+          <!-- Main chat area -->
+          <div class="chat-main">
+            <!-- Room header -->
+            <div class="chat-room-header">
+              <div class="chat-room-info">
+                <span class="chat-room-icon" id="chat-current-icon">#</span>
+                <div>
+                  <p class="chat-room-name" id="chat-current-room">ทั่วไป</p>
+                  <p class="chat-room-desc" id="chat-current-desc">ห้องสนทนาทั่วไป</p>
+                </div>
+              </div>
+              <button class="chat-clear-btn" onclick="confirmClearChat()" id="chat-clear-btn"
+                title="Admin: ล้าง Chat">🗑️</button>
+            </div>
+
+            <!-- Messages -->
+            <div class="chat-messages" id="chat-messages">
+              <div class="chat-loading">
+                <div class="chat-spinner"></div>
+                <p>กำลังโหลด...</p>
+              </div>
+            </div>
+
+            <!-- Typing indicator -->
+            <div class="chat-typing-area" id="chat-typing-area"></div>
+
+            <!-- Input bar -->
+            <div class="chat-input-bar">
+              <div class="chat-emoji-row" id="chat-emoji-row">
+                <button class="chat-emoji-btn" onclick="insertEmoji('😄')">😄</button>
+                <button class="chat-emoji-btn" onclick="insertEmoji('🔥')">🔥</button>
+                <button class="chat-emoji-btn" onclick="insertEmoji('👍')">👍</button>
+                <button class="chat-emoji-btn" onclick="insertEmoji('❤️')">❤️</button>
+                <button class="chat-emoji-btn" onclick="insertEmoji('😂')">😂</button>
+                <button class="chat-emoji-btn" onclick="insertEmoji('🎉')">🎉</button>
+                <button class="chat-emoji-btn" onclick="insertEmoji('😎')">😎</button>
+                <button class="chat-emoji-btn" onclick="insertEmoji('🤔')">🤔</button>
+                <button class="chat-emoji-btn" onclick="insertEmoji('💯')">💯</button>
+                <button class="chat-emoji-btn" onclick="insertEmoji('🪙')">🪙</button>
+              </div>
+              <div class="chat-input-row">
+                <div class="chat-avatar-mini" id="chat-avatar-mini">?</div>
+                <input type="text" id="chat-input" class="chat-input" placeholder="พิมพ์ข้อความ..." maxlength="300"
+                  onkeydown="handleChatKey(event)" oninput="handleChatTyping()" autocomplete="off" />
+                <button class="chat-emoji-toggle" onclick="toggleEmojiRow()" title="Emoji">😊</button>
+                <button class="chat-send-btn" onclick="sendChatMessage()" id="chat-send-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                </button>
+              </div>
+              <p class="chat-char-count" id="chat-char-count">0/300</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROFILE SECTION -->
+    <section class="section" id="section-profile">
+      <div class="container">
+        <div class="page-header">
+          <h2 class="page-title">👤 โปรไฟล์ของฉัน</h2>
+          <p class="page-subtitle">ข้อมูลส่วนตัวและสถิติการเรียน</p>
+        </div>
+        <div class="profile-grid">
+          <div class="profile-card">
+            <!-- Avatar Upload Wrapper -->
+            <div class="avatar-upload-wrap" id="avatar-upload-wrap">
+              <div class="profile-avatar-big" id="profile-avatar-big">😄</div>
+              <label class="avatar-upload-overlay" for="avatar-file-input" id="avatar-upload-overlay">
+                <span class="overlay-icon">📷</span>
+                <span class="overlay-text">เปลี่ยนรูป</span>
+              </label>
+              <button class="avatar-remove-btn" id="avatar-remove-btn" onclick="removeAvatar()"
+                title="ลบรูปโปรไฟล์">✕</button>
+              <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarUpload(event)"
+                style="display:none" />
+            </div>
+
+            <h3 class="profile-nickname" id="profile-nickname">ชื่อเล่น</h3>
+            <p class="profile-fullname" id="profile-fullname">ชื่อ-นามสกุล</p>
+            <div class="profile-room-badge" id="profile-room-badge">ห้อง</div>
+            <div class="profile-grade-badge" id="profile-grade-badge">Unranked</div>
+          </div>
+          <div class="profile-stats-card">
+            <h4 class="profile-stats-title">📊 สถิติของฉัน</h4>
+            <div class="profile-stat-row">
+              <span class="psr-label">🪙 โทเค้นสะสม</span>
+              <span class="psr-value" id="ps-token">0</span>
+            </div>
+            <div class="profile-stat-row">
+              <span class="psr-label">🏅 อันดับปัจจุบัน</span>
+              <span class="psr-value" id="ps-rank">#-</span>
+            </div>
+            <div class="profile-stat-row">
+              <span class="psr-label">📱 เบอร์โทร</span>
+              <span class="psr-value" id="ps-phone">-</span>
+            </div>
+            <div class="profile-stat-row">
+              <span class="psr-label">📧 อีเมล</span>
+              <span class="psr-value" id="ps-email">-</span>
+            </div>
+            <div class="profile-stat-row">
+              <span class="psr-label">🏫 ห้องเรียน</span>
+              <span class="psr-value" id="ps-room">-</span>
+            </div>
+            <div class="profile-progress-section">
+              <div class="progress-header">
+                <span>ความคืบหน้าสู่เกรดถัดไป</span>
+                <span id="progress-label">0 / 50</span>
+              </div>
+              <div class="progress-bar-outer">
+                <div class="progress-bar-inner" id="progress-bar-inner" style="width:0%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Admin shortcut (shown when admin logged in) -->
+        <div class="admin-panel hidden" id="admin-panel">
+          <h4 class="admin-title">⚙️ ทางลัดสู่หลังบ้าน</h4>
+          <p class="admin-hint">คุณเข้าสู่ระบบในฐานะ Admin</p>
+          <button class="btn-admin" onclick="showSection('adminbackend')" style="margin-top:10px">🚀
+            ไปที่ระบบหลังบ้าน</button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===== QUIZ SECTION ===== -->
+    <section class="section" id="section-quiz">
+      <div class="container">
+        <div class="page-header">
+          <h2 class="page-title">📝 แบบทดสอบ</h2>
+          <p class="page-subtitle">ทำแบบทดสอบ รับ Token เพิ่มพูนความรู้!</p>
+        </div>
+
+        <!-- Quiz Home: Category List -->
+        <div id="quiz-home">
+          <div class="quiz-stats-bar" id="quiz-stats-bar">
+            <div class="quiz-stat-pill">
+              <span id="quiz-stat-done">0</span>
+              <span>ทำแล้ว</span>
+            </div>
+            <div class="quiz-stat-pill quiz-stat-token">
+              <span id="quiz-stat-token">0</span>
+              <span>Token จาก Quiz</span>
+            </div>
+          </div>
+          <div class="quiz-categories-label">🗂️ เลือกหมวดหมู่</div>
+          <div class="quiz-category-grid" id="quiz-category-grid">
+            <!-- JS rendered -->
+          </div>
+          <div class="quiz-empty-state hidden" id="quiz-no-categories">
+            <span>📭</span>
+            <p>ยังไม่มีแบบทดสอบ<br><small>Admin จะเพิ่มแบบทดสอบเร็วๆ นี้</small></p>
+          </div>
+        </div>
+
+        <!-- Quiz Play Area (hidden by default) -->
+        <div id="quiz-play-area" class="hidden">
+          <!-- JS rendered -->
+        </div>
+
+        <!-- Quiz Result (hidden by default) -->
+        <div id="quiz-result-area" class="hidden">
+          <!-- JS rendered -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SHOP SECTION ===== -->
+    <section class="section" id="section-shop">
+      <div class="container">
+        <div class="page-header">
+          <h2 class="page-title">🛒 ร้านแลกของรางวัล</h2>
+          <p class="page-subtitle">ใช้ Token สะสมแลกรับของรางวัลสุดพิเศษ!</p>
+        </div>
+
+        <!-- My Token Balance -->
+        <div class="shop-balance-bar" id="shop-balance-bar">
+          <div class="sbb-left">
+            <span class="sbb-fire">🔥</span>
+            <div>
+              <p class="sbb-label">Token ของฉัน</p>
+              <p class="sbb-value" id="shop-my-tokens">0</p>
+            </div>
+          </div>
+          <div class="sbb-right">
+            <span class="sbb-hint">เลือกของรางวัลที่ต้องการด้านล่าง</span>
+            <button class="sbb-history-btn" onclick="showRedeemHistory()">📋 ประวัติการแลก</button>
+          </div>
+        </div>
+
+        <!-- Reward Items Grid -->
+        <div class="shop-grid" id="shop-grid">
+          <!-- Rendered by JS -->
+        </div>
+
+        <!-- Redemption History Panel -->
+        <div class="shop-history-panel hidden" id="shop-history-panel">
+          <div class="shp-header">
+            <h3>📋 ประวัติการแลกของรางวัล</h3>
+            <button onclick="hideRedeemHistory()" class="shp-close">✕</button>
+          </div>
+          <div id="shop-history-list">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ===== REDEEM CONFIRM MODAL ===== -->
+  <div class="modal-overlay hidden" id="redeem-modal-overlay" onclick="closeRedeemModal(event)">
+    <div class="redeem-modal" id="redeem-modal">
+      <div class="redeem-modal-header">
+        <span id="redeem-modal-icon" style="font-size:3rem">🎁</span>
+        <h3 id="redeem-modal-title">ยืนยันการแลก</h3>
+        <p id="redeem-modal-desc" class="redeem-modal-desc"></p>
+      </div>
+      <div class="redeem-modal-body">
+        <div class="redeem-cost-display">
+          <span>ราคา:</span>
+          <span id="redeem-modal-cost" class="redeem-cost-val">0 🪙</span>
+        </div>
+        <div class="redeem-after-display">
+          <span>Token คงเหลือหลังแลก:</span>
+          <span id="redeem-modal-after" class="redeem-after-val">0 🪙</span>
+        </div>
+        <div id="redeem-modal-error" class="redeem-modal-error"></div>
+        <div class="redeem-modal-btns">
+          <button class="redeem-btn-cancel" onclick="closeRedeemModal()">ยกเลิก</button>
+          <button class="redeem-btn-confirm" id="redeem-btn-confirm" onclick="confirmRedeem()">✅ ยืนยันแลก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADD/EDIT SHOP ITEM MODAL ===== -->
+  <div class="modal-overlay hidden" id="item-modal-overlay" onclick="closeItemModal(event)">
+    <div class="redeem-modal" id="item-modal" style="max-width:480px">
+      <div class="redeem-modal-header" style="flex-direction:row;justify-content:space-between;align-items:center">
+        <h3 id="item-modal-title" style="font-size:1.1rem">➕ เพิ่มสินค้าใหม่</h3>
+        <button onclick="closeItemModal()"
+          style="background:rgba(255,255,255,0.08);border:none;border-radius:8px;width:30px;height:30px;color:var(--text-muted);cursor:pointer;font-size:1rem">×</button>
+      </div>
+      <div class="redeem-modal-body">
+        <div class="item-form-grid">
+          <div class="item-form-row">
+            <label class="item-form-label">ไอคอน (Emoji)</label>
+            <input type="text" id="if-icon" class="aq-input" placeholder="☕" maxlength="4"
+              style="width:80px;text-align:center;font-size:1.5rem" />
+          </div>
+          <div class="item-form-row">
+            <label class="item-form-label">ชื่อสินค้า</label>
+            <input type="text" id="if-name" class="aq-input" placeholder="คูปองน้ำคาเฟ่" style="flex:1" />
+          </div>
+          <div class="item-form-row">
+            <label class="item-form-label">คำอธิบาย</label>
+            <textarea id="if-desc" class="aq-input" placeholder="รายละเอียดของรางวัล..." rows="2"
+              style="flex:1;resize:vertical;font-family:inherit"></textarea>
+          </div>
+          <div class="item-form-row">
+            <label class="item-form-label">ราคา (Token)</label>
+            <input type="number" id="if-cost" class="aq-input aq-amount" placeholder="1000" min="1"
+              style="width:140px" />
+          </div>
+          <div class="item-form-row">
+            <label class="item-form-label">หมวดหมู่</label>
+            <select id="if-category" class="aq-input" style="flex:1">
+              <option value="grade">📝 คะแนน</option>
+              <option value="coupon">🎫 คูปอง</option>
+              <option value="privilege">⭐ สิทธิพิเศษ</option>
+              <option value="other">📦 อื่นๆ</option>
+            </select>
+          </div>
+          <div class="item-form-row">
+            <label class="item-form-label">สีธีม</label>
+            <input type="color" id="if-color" value="#6C63FF"
+              style="width:50px;height:36px;border-radius:8px;border:none;cursor:pointer;background:none" />
+          </div>
+          <div class="item-form-row">
+            <label class="item-form-label">จำกัดจำนวน</label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="if-limited" style="width:18px;height:18px;accent-color:var(--primary)" />
+              <span style="font-size:0.85rem;color:var(--text-muted)">ทำเครื่องหมายว่าเป็นสินค้าจำกัด</span>
+            </label>
+          </div>
+        </div>
+        <div id="item-modal-error"
+          style="color:var(--danger);font-size:0.82rem;min-height:18px;text-align:center;margin-top:4px"></div>
+        <div class="redeem-modal-btns" style="margin-top:12px">
+          <button class="redeem-btn-cancel" onclick="closeItemModal()">ยกเลิก</button>
+          <button class="redeem-btn-confirm" onclick="saveItemModal()">💾 บันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN LOGIN MODAL ===== -->
+
+  <div class="modal-overlay hidden" id="admin-modal-overlay" onclick="closeAdminModal(event)">
+    <div class="admin-modal" id="admin-modal">
+      <div class="admin-modal-header">
+        <div class="admin-modal-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="admin-modal-title">เข้าสู่ระบบสำหรับผู้ดูแล</h3>
+          <p class="admin-modal-sub">เฉพาะผู้ดูแลระบบเท่านั้น</p>
+        </div>
+        <button class="admin-modal-close" onclick="closeAdminModal()">×</button>
+      </div>
+      <div class="admin-modal-body">
+        <div class="form-group">
+          <label for="admin-username">Username</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="admin-username" placeholder="Username" autocomplete="off"
+              onkeydown="if(event.key==='Enter') adminLogin()" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="admin-password">Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔑</span>
+            <input type="password" id="admin-password" placeholder="Password"
+              onkeydown="if(event.key==='Enter') adminLogin()" />
+          </div>
+        </div>
+        <div class="form-error" id="admin-modal-error"></div>
+        <button class="btn-primary" id="btn-admin-login" onclick="adminLogin()" style="margin-top:4px">
+          <span>เข้าสู่ระบบ</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== QUIZ QUESTION MODAL ===== -->
+  <div class="modal-overlay hidden" id="quiz-q-modal-overlay" onclick="closeQuizQuestionModal(event)">
+    <div class="quiz-modal" id="quiz-q-modal">
+      <div class="quiz-modal-header">
+        <h3 id="quiz-q-modal-title">➕ เพิ่มคำถามใหม่</h3>
+        <button onclick="closeQuizQuestionModal()" class="quiz-modal-close">×</button>
+      </div>
+      <div class="quiz-modal-body">
+        <!-- Category -->
+        <div class="item-form-row">
+          <label class="item-form-label">🗂️ หมวดหมู่ <span style="color:var(--danger)">*</span></label>
+          <select id="qq-category" class="aq-input" style="flex:1"></select>
+        </div>
+        <!-- Question text -->
+        <div class="item-form-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+          <label class="item-form-label">❓ คำถาม <span style="color:var(--danger)">*</span></label>
+          <textarea id="qq-question" class="aq-input" rows="3" placeholder="พิมพ์คำถามที่นี่..."
+            style="width:100%;resize:vertical;font-family:inherit"></textarea>
+        </div>
+        <!-- Image upload -->
+        <div class="item-form-row" style="flex-direction:column;align-items:flex-start;gap:6px">
+          <label class="item-form-label">🖼️ รูปภาพโจทย์ (ไม่บังคับ)</label>
+          <div class="quiz-img-upload-zone" id="quiz-img-zone"
+            onclick="document.getElementById('qq-img-input').click()">
+            <span id="quiz-img-zone-text">📁 คลิกเพื่ออัปโหลดรูปภาพ</span>
+            <img id="quiz-img-preview" src="" alt=""
+              style="display:none;max-width:100%;max-height:160px;border-radius:8px;margin-top:8px" />
+          </div>
+          <input type="file" id="qq-img-input" accept="image/*" style="display:none"
+            onchange="handleQuizImageUpload(event)" />
+          <button id="quiz-img-remove-btn" onclick="removeQuizImage()"
+            style="display:none;background:rgba(255,82,82,0.15);color:var(--danger);border:1px solid rgba(255,82,82,0.3);border-radius:8px;padding:4px 12px;cursor:pointer;font-size:0.8rem;font-family:inherit">🗑️
+            ลบรูปภาพ</button>
+        </div>
+        <!-- Answer choices -->
+        <div style="margin:8px 0 4px">
+          <label class="item-form-label">📋 ตัวเลือกคำตอบ <span style="color:var(--danger)">*</span></label>
+          <p style="font-size:0.75rem;color:var(--text-muted)">คลิก 🔘 เพื่อตั้งเป็นคำตอบที่ถูกต้อง</p>
+        </div>
+        <div id="qq-choices-list">
+          <!-- JS rendered -->
+        </div>
+        <button onclick="addQuizChoice()"
+          style="background:rgba(108,99,255,0.15);color:var(--primary-light);border:1px dashed rgba(108,99,255,0.4);border-radius:10px;padding:8px 16px;cursor:pointer;font-family:inherit;font-size:0.85rem;width:100%;margin-top:4px;transition:0.2s">➕
+          เพิ่มตัวเลือก</button>
+        <!-- Explanation -->
+        <div class="item-form-row" style="flex-direction:column;align-items:flex-start;gap:6px;margin-top:8px">
+          <label class="item-form-label">💡 คำอธิบายเฉลย (ไม่บังคับ)</label>
+          <textarea id="qq-explanation" class="aq-input" rows="2" placeholder="อธิบายเหตุผลว่าทำไมคำตอบนี้ถึงถูก..."
+            style="width:100%;resize:vertical;font-family:inherit"></textarea>
+        </div>
+        <!-- Token reward -->
+        <div class="item-form-row">
+          <label class="item-form-label">🪙 Token รางวัล <span style="color:var(--danger)">*</span></label>
+          <input type="number" id="qq-token" class="aq-input aq-amount" min="1" value="10" placeholder="10"
+            style="width:120px" />
+        </div>
+        <div id="quiz-q-modal-error"
+          style="color:var(--danger);font-size:0.82rem;min-height:18px;text-align:center;margin-top:4px"></div>
+        <div class="redeem-modal-btns" style="margin-top:12px">
+          <button class="redeem-btn-cancel" onclick="closeQuizQuestionModal()">ยกเลิก</button>
+          <button class="redeem-btn-confirm" onclick="saveQuizQuestion()">💾 บันทึกคำถาม</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== QUIZ CATEGORY MODAL ===== -->
+  <div class="modal-overlay hidden" id="quiz-cat-modal-overlay" onclick="closeQuizCategoryModal(event)">
+    <div class="quiz-modal" id="quiz-cat-modal" style="max-width:420px">
+      <div class="quiz-modal-header">
+        <h3 id="quiz-cat-modal-title">🗂️ เพิ่มหมวดหมู่</h3>
+        <button onclick="closeQuizCategoryModal()" class="quiz-modal-close">×</button>
+      </div>
+      <div class="quiz-modal-body">
+        <div class="item-form-row">
+          <label class="item-form-label">ชื่อหมวดหมู่ <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="qc-name" class="aq-input" placeholder="เช่น ฮาร์ดแวร์คอมพิวเตอร์" style="flex:1" />
+        </div>
+        <div class="item-form-row">
+          <label class="item-form-label">ไอคอน (Emoji)</label>
+          <input type="text" id="qc-icon" class="aq-input" placeholder="💻" maxlength="4"
+            style="width:80px;text-align:center;font-size:1.5rem" />
+        </div>
+        <div class="item-form-row">
+          <label class="item-form-label">คำอธิบาย</label>
+          <input type="text" id="qc-desc" class="aq-input" placeholder="คำอธิบายหมวดหมู่" style="flex:1" />
+        </div>
+        <div class="item-form-row">
+          <label class="item-form-label">สีธีม</label>
+          <input type="color" id="qc-color" value="#6C63FF"
+            style="width:50px;height:36px;border-radius:8px;border:none;cursor:pointer;background:none" />
+        </div>
+        <div id="quiz-cat-modal-error"
+          style="color:var(--danger);font-size:0.82rem;min-height:18px;text-align:center;margin-top:4px"></div>
+        <div class="redeem-modal-btns" style="margin-top:12px">
+          <button class="redeem-btn-cancel" onclick="closeQuizCategoryModal()">ยกเลิก</button>
+          <button class="redeem-btn-confirm" onclick="saveQuizCategory()">💾 บันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ASSIGNMENT COLUMN MODAL ===== -->
+  <div class="modal-overlay hidden" id="assignment-col-modal-overlay">
+    <div class="quiz-modal" id="assignment-col-modal" style="max-width:420px">
+      <div class="quiz-modal-header">
+        <h3 id="assignment-col-modal-title">📌 สร้างหัวข้องาน</h3>
+        <button onclick="closeAssignmentColumnModal()" class="quiz-modal-close">×</button>
+      </div>
+      <div class="quiz-modal-body">
+        <div class="item-form-row">
+          <label class="item-form-label">ชื่อหัวข้องาน <span style="color:var(--danger)">*</span></label>
+          <input type="text" id="ac-name" class="aq-input" placeholder="เช่น งานที่ 1 หรือ สมุดคณิต" style="flex:1" />
+        </div>
+        <div class="item-form-row" style="margin-top:10px">
+          <label class="item-form-label">คะแนนเต็ม</label>
+          <input type="number" id="ac-max-score" class="aq-input" placeholder="10" min="1" style="width:100px" />
+        </div>
+        <div id="assignment-col-modal-error"
+          style="color:var(--danger);font-size:0.82rem;min-height:18px;text-align:center;margin-top:8px"></div>
+        <div class="redeem-modal-btns" style="margin-top:12px">
+          <button class="redeem-btn-cancel" onclick="closeAssignmentColumnModal()">ยกเลิก</button>
+          <button class="redeem-btn-confirm" onclick="saveAssignmentColumn()">💾 บันทึก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADMIN: Edit Student Info Modal ===== -->
+  <div class="modal-overlay hidden" id="edit-stu-modal-overlay"
+    onclick="if(event.target===this)closeEditStudentModal()">
+    <div class="quiz-modal" style="max-width:420px">
+      <h3 style="margin-bottom:4px;font-size:1.1rem">✏️ แก้ไขข้อมูลนักเรียน</h3>
+      <p id="edit-stu-name" style="color:var(--text-muted);font-size:0.88rem;margin-bottom:16px"></p>
+      <input type="hidden" id="edit-stu-id" />
+
+      <div class="item-form-field" style="margin-bottom:14px">
+        <label class="item-form-label">🏫 ห้องเรียน</label>
+        <select id="edit-stu-room" class="aq-input" style="width:100%">
+          <option value="">-- เลือกห้อง --</option>
+          <option value="ปวช.2/8">ปวช.2/8</option>
+          <option value="ปวช.2/9">ปวช.2/9</option>
+          <option value="ปวช.2/10">ปวช.2/10</option>
+        </select>
+      </div>
+
+      <div class="item-form-field" style="margin-bottom:14px">
+        <label class="item-form-label">📞 เบอร์โทรศัพท์</label>
+        <input type="text" id="edit-stu-phone" class="aq-input" placeholder="0812345678" style="width:100%"
+          maxlength="15" />
+      </div>
+
+      <div class="item-form-field" style="margin-bottom:14px">
+        <label class="item-form-label">📧 อีเมล</label>
+        <input type="email" id="edit-stu-email" class="aq-input" placeholder="example@email.com" style="width:100%" />
+      </div>
+
+      <div class="item-form-field" style="margin-bottom:14px">
+        <label class="item-form-label">🔑 เปลี่ยนรหัสผ่าน (เว้นว่างไว้หากไม่เปลี่ยน)</label>
+        <input type="text" id="edit-stu-password" class="aq-input" placeholder="ใส่รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)"
+          style="width:100%" />
+      </div>
+
+      <div id="edit-stu-modal-error"
+        style="color:var(--danger);font-size:0.82rem;min-height:18px;text-align:center;margin-bottom:10px"></div>
+
+      <div class="redeem-modal-btns">
+        <button class="redeem-btn-cancel" onclick="closeEditStudentModal()">ยกเลิก</button>
+        <button class="redeem-btn-confirm" onclick="saveEditStudent()">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast hidden" id="toast">
+    <span id="toast-icon">✅</span>
+    <span id="toast-msg">ข้อความ</span>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay hidden" id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p>กำลังโหลด...</p>
+  </div>
+
+  <!-- Background Music Player -->
+  <div class="bg-music-widget" id="bg-music-widget">
+    <button class="bg-music-toggle" id="bg-music-toggle" onclick="toggleBgMusic()">
+      <span id="bg-music-icon">🔇</span>
+    </button>
+    <div class="bg-music-controls">
+      <input type="range" id="bg-music-volume" min="0" max="1" step="0.01" value="0.5"
+        oninput="changeBgVolume(this.value)">
+    </div>
+  </div>
+  <audio id="bg-audio" loop>
+    <!-- ไฟล์เสียงพื้นหลัง (หากต้องการเปลี่ยนชื่อไฟล์ ให้แก้ไข src ตรงนี้) -->
+    <source src="bg-music.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+
+  <script src="app.js?v=2026032303"></script>
+</body>
+
+</html>
